@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: university-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: university-app
+  template:
+    metadata:
+      labels:
+        app: university-app
+    spec:
+      containers:
+      - name: university-app
+        image: YOUR_DOCKERHUB_USERNAME/university-management-system:latest
+        ports:
+        - containerPort: 80

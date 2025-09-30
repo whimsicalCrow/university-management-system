@@ -1,0 +1,44 @@
+@page "/"
+@using University.Infrastructure.Repositories
+@using University.Domain.Entities
+@inject StudentRepository Repo
+
+<h3>Students</h3>
+
+<input @bind="firstName" placeholder="First name" />
+<input @bind="lastName" placeholder="Last name" />
+<button class="btn btn-primary" @onclick="Add">Add</button>
+
+<ul>
+    @foreach (var s in students)
+    {
+        <li>@s.FirstName @s.LastName (@s.Id)</li>
+    }
+</ul>
+
+@code {
+    private string firstName = "";
+    private string lastName = "";
+    private List<Student> students = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Seed a student
+        if (!students.Any())
+        {
+            var s = await Repo.AddAsync(new Student { FirstName = "Ada", LastName = "Lovelace" });
+            students.Add(s);
+        }
+    }
+
+    private async Task Add()
+    {
+        if (!string.IsNullOrWhiteSpace(firstName) && !string.IsNullOrWhiteSpace(lastName))
+        {
+            var s = await Repo.AddAsync(new Student { FirstName = firstName, LastName = lastName });
+            students.Add(s);
+            firstName = lastName = "";
+            StateHasChanged();
+        }
+    }
+}
