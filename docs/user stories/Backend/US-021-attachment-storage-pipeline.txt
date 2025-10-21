@@ -1,0 +1,17 @@
+Title: US-021 Implement Attachment Storage Pipeline
+Persona: Student
+
+Description:
+As a student I want to upload thesis artefacts alongside my updates so that my supervisor can review the latest documents and datasets.
+
+Acceptance Criteria:
+- File uploads accept configurable types (PDF, DOCX, PPTX, ZIP) with server-side size validation.
+- Attachments store metadata in the database and binaries in configured blob storage with secure access tokens.
+- Download links expire after a short interval and are audited per request.
+- Virus scanning hook or placeholder process runs for each upload with logged outcome.
+
+Tasks:
+- Design Attachment entity and storage service abstraction supporting Azure Blob or local provider.
+- Integrate file upload components into the thesis update workflow with progress indicators.
+- Implement secure download handler issuing time-bound signed URLs and logging access.
+- Add automated tests for validation, storage interactions, and permission enforcement.

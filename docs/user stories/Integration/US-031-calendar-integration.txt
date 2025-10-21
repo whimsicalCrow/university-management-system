@@ -1,0 +1,17 @@
+Title: US-031 Provide Calendar Integration and ICS Export
+Persona: Professor
+
+Description:
+As a professor I want confirmed meetings to sync with my calendar so that I do not miss thesis sessions.
+
+Acceptance Criteria:
+- Platform generates downloadable ICS files for confirmed meetings including agenda and location fields.
+- Optional OAuth integration with Microsoft 365 or Google Calendar pushes events when configured.
+- Time zones are handled correctly based on user preferences and meeting location.
+- Automated tests verify ICS content and calendar API interactions using mocks.
+
+Tasks:
+- Implement service to build RFC 5545 compliant ICS payloads from meeting data.
+- Add UI actions for calendar export and configure background job to sync with external calendars when enabled.
+- Store user calendar preferences securely with ability to revoke OAuth tokens.
+- Write unit tests validating ICS format and integration tests for the sync workflow with mocked providers.

@@ -1,0 +1,17 @@
+Title: US-013 Establish CQRS and Validation Foundation
+Persona: Developer
+
+Description:
+As a developer I want a consistent request handling pipeline using MediatR and FluentValidation so that new features follow predictable patterns and stay maintainable.
+
+Acceptance Criteria:
+- MediatR is registered and dispatches commands and queries across the solution with unit coverage.
+- A validation pipeline behavior executes FluentValidation validators before handlers and returns structured error responses.
+- Logging behavior captures request name, duration, and correlation ID for diagnostics.
+- Coding guidelines section documents CQRS conventions and sample handler structures.
+
+Tasks:
+- Add MediatR and FluentValidation packages and configure services in Program.cs.
+- Implement ValidationBehavior and LoggingBehavior with associated tests.
+- Create sample command, query, and validator demonstrating the pattern and reference them in docs.
+- Update developer guide to include CQRS folder structure and naming standards.

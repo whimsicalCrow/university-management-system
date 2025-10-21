@@ -1,0 +1,17 @@
+Title: US-011 Build Supervisor Assignment Workflow
+Persona: Department Administrator
+
+Description:
+As the department administrator I want to assign students and supervisors to thesis projects so that each workspace is private to the correct participants.
+
+Acceptance Criteria:
+- UI form allows administrators to search for students and professors and assign them to a thesis project.
+- Assignment updates create or revoke per-thesis access claims for professors and students.
+- Notifications are sent to newly assigned participants with workspace access instructions.
+- Integration test verifies a professor cannot access a thesis before assignment and can after assignment.
+
+Tasks:
+- Create MediatR command/handler for updating thesis participant assignments with validation rules.
+- Build Blazor components for managing assignments including search and confirmation dialogs.
+- Hook into notification service to dispatch onboarding emails to new participants.
+- Add authorization policy checks tied to assignment data and cover with integration tests.

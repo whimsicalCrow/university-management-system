@@ -1,0 +1,17 @@
+Title: US-040 Execute Security Hardening and OWASP Review
+Persona: Department Administrator
+
+Description:
+As the department administrator I want the platform validated against OWASP Top 10 risks so that student and faculty data remain protected.
+
+Acceptance Criteria:
+- Security review covers authentication, authorization, input validation, and sensitive data storage controls.
+- Automated security scans (dependency check, static analysis) run in CI with documented results.
+- Identified vulnerabilities are triaged, fixed, and retested with evidence captured.
+- Security checklist and sign-off report are stored in project documentation.
+
+Tasks:
+- Run manual penetration tests focusing on Broken Access Control and Injection scenarios.
+- Integrate dependency vulnerability scanning into the CI pipeline.
+- Remedy findings and add regression tests where gaps were discovered.
+- Compile OWASP review report and obtain stakeholder approval before release.

@@ -1,0 +1,17 @@
+Title: US-032 Track Meeting Action Items with Live Updates
+Persona: Student
+
+Description:
+As a student I want meeting outcomes and follow-up tasks tracked in real time so that I have clarity on next steps after each session.
+
+Acceptance Criteria:
+- Meeting detail view lists agreed action items with owner, due date, and completion status.
+- Participants can add or update action items during a meeting and changes broadcast instantly via SignalR.
+- Completed action items appear in the thesis dashboard highlights section.
+- Activity log records creation and completion events for accountability.
+
+Tasks:
+- Extend meeting domain model to include action items and related CQRS handlers.
+- Implement SignalR hub broadcasting action item changes to connected meeting participants.
+- Build Blazor components for inline editing of action items with optimistic UI updates.
+- Add integration tests ensuring authorization and real-time updates function as expected.
