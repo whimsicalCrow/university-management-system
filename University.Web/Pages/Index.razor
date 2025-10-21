@@ -1,44 +1,27 @@
 @page "/"
-@using University.Infrastructure.Repositories
-@using University.Domain.Entities
-@inject StudentRepository Repo
 
-<h3>Students</h3>
+<div class="container py-4">
+    <h1 class="display-5">Thesis Collaboration Workspace</h1>
+    <p class="lead">
+        This starter experience wires up the core infrastructure for supervising professors and thesis students.
+        Hook the Blazor UI to MediatR commands to manage student workspaces, track progress updates, and schedule meetings.
+    </p>
 
-<input @bind="firstName" placeholder="First name" />
-<input @bind="lastName" placeholder="Last name" />
-<button class="btn btn-primary" @onclick="Add">Add</button>
+    <section class="mt-4">
+        <h3>What’s ready</h3>
+        <ul>
+            <li>Domain entities for students, professors, thesis projects, updates, and meetings</li>
+            <li>CQRS commands &amp; queries to create projects, submit updates, schedule meetings, and fetch workspace dashboards</li>
+            <li>EF Core persistence with repositories and validation pipeline behaviors</li>
+        </ul>
+    </section>
 
-<ul>
-    @foreach (var s in students)
-    {
-        <li>@s.FirstName @s.LastName (@s.Id)</li>
-    }
-</ul>
-
-@code {
-    private string firstName = "";
-    private string lastName = "";
-    private List<Student> students = new();
-
-    protected override async Task OnInitializedAsync()
-    {
-        // Seed a student
-        if (!students.Any())
-        {
-            var s = await Repo.AddAsync(new Student { FirstName = "Ada", LastName = "Lovelace" });
-            students.Add(s);
-        }
-    }
-
-    private async Task Add()
-    {
-        if (!string.IsNullOrWhiteSpace(firstName) && !string.IsNullOrWhiteSpace(lastName))
-        {
-            var s = await Repo.AddAsync(new Student { FirstName = firstName, LastName = lastName });
-            students.Add(s);
-            firstName = lastName = "";
-            StateHasChanged();
-        }
-    }
-}
+    <section class="mt-4">
+        <h3>Next steps</h3>
+        <ol>
+            <li>Create Blazor components that invoke <code>CreateThesisProjectCommand</code>, <code>SubmitThesisUpdateCommand</code>, and <code>ScheduleMeetingCommand</code></li>
+            <li>Design a professor dashboard that consumes <code>GetWorkspaceOverviewQuery</code></li>
+            <li>Swap the in-memory database for SQL Server and add blob storage for file uploads</li>
+        </ol>
+    </section>
+</div>

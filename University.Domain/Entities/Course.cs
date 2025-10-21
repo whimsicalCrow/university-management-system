@@ -1,3 +1,5 @@
+using System;
+
 namespace University.Domain.Entities;
 
 public class Course
