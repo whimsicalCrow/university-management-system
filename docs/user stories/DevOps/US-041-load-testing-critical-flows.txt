@@ -1,0 +1,17 @@
+Title: US-041 Perform Load Testing on Critical Flows
+Persona: DevOps Engineer
+
+Description:
+As the DevOps engineer I want confidence that the platform can handle peak thesis review periods so that users experience consistent performance.
+
+Acceptance Criteria:
+- Load test scripts cover update submission, file upload, and meeting scheduling scenarios.
+- Test execution reaches agreed concurrency targets without exceeding response time thresholds.
+- Bottlenecks are identified with metrics from application insights and logs.
+- Remediation actions are captured with before/after results.
+
+Tasks:
+- Author k6 or similar scripts simulating realistic user behavior across critical APIs.
+- Configure test data seeding to support repeated load test runs.
+- Execute tests against staging environment and collect performance metrics.
+- Optimize hotspots (e.g., caching, database indices) and document improvements in the runbook.

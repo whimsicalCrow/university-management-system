@@ -1,0 +1,17 @@
+Title: US-020 Deliver Thesis Update Timeline
+Persona: Student
+
+Description:
+As a student I want to post structured progress updates and review my history so that my supervisor stays informed about my thesis work.
+
+Acceptance Criteria:
+- Timeline view lists updates in reverse chronological order with created date, status, and summary snippet.
+- Students can author new updates using Markdown support and draft autosave.
+- Supervisors see read-only view with filters by status (Pending Review, Accepted, Needs Revision).
+- Validation prevents empty updates and enforces maximum content length with friendly messages.
+
+Tasks:
+- Implement UpdateThesisProgressCommand/Handler and corresponding query projections.
+- Build Blazor components for composing and displaying updates with Markdown preview.
+- Add database migrations for thesis update storage including status enum.
+- Write integration tests covering create, edit, and list scenarios with authorization checks.

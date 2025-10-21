@@ -1,0 +1,16 @@
+Title: US-001 Establish Project Architecture Baseline
+Persona: Department Administrator
+
+Description:
+As the department administrator I want the engineering team to define the initial thesis platform scope and solution structure so that everyone builds against an agreed clean architecture baseline.
+
+Acceptance Criteria:
+- Documented scope, personas, and success metrics are reviewed and approved by the sponsor.
+- Solution skeleton exists with Domain, Application, Infrastructure, and Web projects wired together and building successfully.
+- Shared coding standards and branching strategy are recorded and distributed to contributors.
+
+Tasks:
+- Facilitate requirement alignment workshop with professors and student representatives.
+- Capture scope decisions and update the project outline document.
+- Scaffold the .NET solution with the agreed project structure and verify dotnet build succeeds.
+- Publish engineering working agreement covering code style, branching, and review policy.

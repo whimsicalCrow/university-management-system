@@ -1,0 +1,17 @@
+Title: US-022 Enable Professor Feedback Loop and Notifications
+Persona: Professor
+
+Description:
+As a professor I want to review student updates, leave feedback, and trigger notifications so that students know what to improve and when.
+
+Acceptance Criteria:
+- Professors can change update status (Accepted, Needs Revision) and leave threaded comments.
+- Students receive in-app notifications and email summaries when feedback is posted or status changes.
+- Notification preferences allow users to opt into daily digest or instant notifications.
+- Audit trail captures who changed each update status and when.
+
+Tasks:
+- Create MediatR commands for submitting feedback, updating status, and logging actions.
+- Build UI components for professors to comment and respond with inline editing support.
+- Implement notification service delivering SignalR toast messages and email templates.
+- Add integration tests covering notification delivery and audit record generation.

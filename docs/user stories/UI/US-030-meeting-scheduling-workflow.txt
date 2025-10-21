@@ -1,0 +1,17 @@
+Title: US-030 Build Meeting Scheduling Workflow
+Persona: Student
+
+Description:
+As a student I want to request meeting slots with my supervisor through the platform so that we can coordinate progress reviews efficiently.
+
+Acceptance Criteria:
+- Students can propose multiple meeting slots referencing their thesis project and agenda.
+- Professors can accept or decline slots, optionally suggesting alternatives.
+- Confirmed meetings appear on both professor and student dashboards with status badges.
+- Email confirmations summarize date, time, attendees, and video conference link if provided.
+
+Tasks:
+- Design Meeting aggregate and database schema capturing status, attendees, and agenda details.
+- Implement scheduling commands/handlers for proposing, accepting, and declining meetings.
+- Create UI components enabling slot selection, agenda entry, and response notifications.
+- Add business rules preventing overlapping meetings for professors and cover with tests.

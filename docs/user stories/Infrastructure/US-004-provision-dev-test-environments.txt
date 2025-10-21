@@ -1,0 +1,17 @@
+Title: US-004 Provision Development and Test Environments
+Persona: Department Administrator
+
+Description:
+As the department administrator I want consistent development and test environments so that faculty and students can trial the platform without configuration conflicts.
+
+Acceptance Criteria:
+- Docker Compose or infrastructure scripts spin up the web app, database, and Redis cache with a single command.
+- Environment variables for secrets and connection strings are documented and excluded from version control.
+- A shared staging environment URL is available for user acceptance testing with sample seed data.
+- Monitoring or logging access instructions are documented for troubleshooting.
+
+Tasks:
+- Create infrastructure scripts (Docker Compose or Terraform placeholders) covering app, database, and cache services.
+- Define environment variable templates and sample secrets guidance in README.
+- Deploy a shared staging instance and validate connectivity with seeded accounts.
+- Document environment lifecycle management, including refresh and cleanup procedures.

@@ -1,0 +1,17 @@
+Title: US-003 Configure CI/CD Pipeline Skeleton
+Persona: DevOps Engineer
+
+Description:
+As the DevOps engineer I want an automated pipeline that restores, builds, and runs tests on every push so that the team catches regressions early and can deploy confidently later.
+
+Acceptance Criteria:
+- GitHub Actions workflow triggers on pull requests and main branch pushes.
+- Pipeline executes dotnet restore, dotnet build in Release configuration, and dotnet test for unit and integration projects.
+- Build artifacts and coverage reports are uploaded as job outputs.
+- Failed pipeline status blocks pull request merges through branch protection rules.
+
+Tasks:
+- Author initial GitHub Actions YAML with separate jobs for build and test stages.
+- Configure caching for NuGet packages to reduce pipeline duration.
+- Publish test results using the dotnet test logger and ensure they appear in the GitHub UI.
+- Update repository documentation to describe the CI process and how to address failures.

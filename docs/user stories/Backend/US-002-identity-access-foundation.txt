@@ -1,0 +1,17 @@
+Title: US-002 Implement Identity and Access Foundation
+Persona: Professor
+
+Description:
+As a professor I want to sign in securely and access only my assigned thesis workspaces so that sensitive student information remains protected.
+
+Acceptance Criteria:
+- ASP.NET Core Identity is configured with user, role, and claim stores persisted in the application database.
+- Role definitions for Administrator, Professor, Student, and CoSupervisor are created with seed data.
+- Login, logout, and password reset flows function end to end using HTTPS and secure cookies or JWT tokens.
+- Authorization policies restrict thesis workspace access to assigned users in integration tests.
+
+Tasks:
+- Add Identity infrastructure to the solution and run initial database migrations.
+- Seed default roles and an administrator account via migration or startup task.
+- Implement login and logout UI in Blazor Server with validation and error messaging.
+- Add authorization policy helpers for thesis-specific access checks and cover with tests.

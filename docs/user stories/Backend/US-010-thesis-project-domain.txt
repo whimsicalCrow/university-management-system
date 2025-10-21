@@ -1,0 +1,17 @@
+Title: US-010 Implement Thesis Project Domain Aggregate
+Persona: Professor
+
+Description:
+As a professor I want each thesis project represented as a structured record so that I can track scope, milestones, and supervisory responsibilities accurately.
+
+Acceptance Criteria:
+- ThesisProject aggregate captures title, abstract, primary supervisor, optional co-supervisors, milestones, and key dates.
+- Entity configurations persist ThesisProject data via EF Core with migrations applied.
+- CRUD operations for thesis projects are exposed through MediatR commands and queries with validation.
+- Unit tests cover aggregate invariants and repository interactions.
+
+Tasks:
+- Model ThesisProject aggregate root and value objects inside the Domain project.
+- Add EF Core mappings, DbContext DbSet, and associated migration scripts.
+- Implement CreateThesisProjectCommand/Handler and GetThesisProjectQuery/Handler with DTOs.
+- Write unit tests verifying validation and persistence behaviors using an in-memory database.

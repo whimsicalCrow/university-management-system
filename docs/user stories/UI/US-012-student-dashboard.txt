@@ -1,0 +1,17 @@
+Title: US-012 Create Student Thesis Dashboard
+Persona: Student
+
+Description:
+As a student I want a dashboard that summarises my thesis status so that I can quickly see upcoming milestones, recent feedback, and pending tasks.
+
+Acceptance Criteria:
+- Blazor page lists the student's active thesis projects with status chips and next milestone due date.
+- Recent supervisor comments and outstanding action items are visible in a highlights section.
+- Dashboard links to the update timeline, file library, and meeting scheduler for the selected thesis.
+- Responsive layout renders correctly on desktop and tablet viewports per UI guidelines.
+
+Tasks:
+- Build CQRS query aggregating thesis summary data for the authenticated student.
+- Implement dashboard component with reusable cards for milestones, feedback, and shortcuts.
+- Add unit tests for the query projection and integration tests for authorization boundaries.
+- Conduct accessibility review ensuring keyboard navigation and ARIA labels cover interactive elements.
