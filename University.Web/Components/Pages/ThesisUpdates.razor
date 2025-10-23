@@ -1,30 +1,447 @@
 @page "/updates"
+@using System.Globalization
+@using System.Linq
+@using System.Net
+@using System.Text.RegularExpressions
+@using System.Threading
+@using FluentValidation
+@using Markdig
+@using MediatR
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Routing
+@using University.Application.ThesisProjects.Commands.UpdateThesisProgress
+@using University.Application.ThesisProjects.Queries.GetThesisUpdates
+@using University.Domain.Aggregates.Theses
+
+@inject IMediator Mediator
+
+@implements IDisposable
 
 <div class="container page-section">
     <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
         <div>
-            <span class="highlight-tag mb-2"><span class="bi bi-journal-text"></span> Progress Updates</span>
-            <h1 class="section-heading mb-2">Thesis Updates</h1>
-            <p class="text-muted mb-0">Καταγράψτε σημειώσεις, ανεβάστε αρχεία και παρακολουθήστε τα σχόλια των καθηγητών.</p>
+            <span class="highlight-tag mb-2">
+                <span class="bi bi-journal-text"></span>
+                Thesis Progress
+            </span>
+            <h1 class="section-heading mb-2">Χρονογραμμή Ενημερώσεων</h1>
+            <p class="text-muted mb-0">
+                Καταγράψτε δομημένες ενημερώσεις και παρακολουθήστε την ιστορικότητα της διπλωματικής εργασίας.
+            </p>
         </div>
-        <NavLink class="btn btn-primary mt-3 mt-lg-0" href="updates">Νέα καταχώρηση</NavLink>
+        @if (!IsSupervisorView)
+        {
+            <button class="btn btn-outline-primary mt-3 mt-lg-0" @onclick="LoadTimelineAsync" disabled="@MissingContext">
+                <span class="bi bi-arrow-repeat"></span>
+                Ανανέωση
+            </button>
+        }
     </div>
 
-    <section class="mb-5">
-        <h2 class="h4 fw-semibold mb-3">Recent Activity</h2>
-        <div class="card info-card">
-            <div class="card-body">
-                <p class="text-muted mb-0">This table will show the latest updates once the data layer is connected.</p>
-            </div>
+    @if (MissingContext)
+    {
+        <div class="alert alert-warning" role="alert">
+            <span class="bi bi-info-circle me-2"></span>
+            Προσθέστε τα παραμέτρους <code>thesisId</code> και <code>authorId</code> στο URL για να ενεργοποιηθεί η ροή ενημερώσεων.
         </div>
-    </section>
+    }
+    else
+    {
+        @if (!IsSupervisorView)
+        {
+            <section class="card compose-card mb-5">
+                <div class="card-body">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
+                        <div class="flex-fill">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h2 class="h5 fw-semibold mb-0">Νέα ενημέρωση</h2>
+                                <span class="badge draft-badge">Αποθήκευση πρόχειρου κάθε 2,5''</span>
+                            </div>
+                            <textarea class="form-control update-editor"
+                                      placeholder="Περιγράψτε την πρόοδό σας χρησιμοποιώντας Markdown..."
+                                      rows="10"
+                                      value="@editorContent"
+                                      @oninput="OnEditorInput"
+                                      disabled="@isSaving"></textarea>
 
-    <section>
-        <h2 class="h4 fw-semibold mb-3">Upload Center</h2>
-        <div class="card info-card">
-            <div class="card-body">
-                <p class="text-muted mb-0">File upload controls and validation messages will be added as implementation progresses.</p>
+                            @if (!string.IsNullOrWhiteSpace(validationMessage))
+                            {
+                                <div class="alert alert-danger mt-3" role="alert">
+                                    <span class="bi bi-exclamation-triangle-fill me-2"></span>
+                                    @validationMessage
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(autosaveMessage))
+                            {
+                                <div class="alert alert-secondary autosave-banner mt-3" role="status">
+                                    <span class="bi bi-cloud-check me-2"></span>
+                                    @autosaveMessage
+                                </div>
+                            }
+
+                            <div class="d-flex flex-column flex-md-row gap-3 mt-4">
+                                <button class="btn btn-outline-primary" @onclick="SaveDraftAsync" disabled="@isSaving">
+                                    <span class="bi bi-cloud-arrow-down"></span>
+                                    Αποθήκευση πρόχειρου
+                                </button>
+                                <button class="btn btn-primary" @onclick="PublishAsync" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    }
+                                    <span class="bi bi-send"></span>
+                                    Αποστολή για αξιολόγηση
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="preview-pane flex-fill">
+                            <div class="preview-header">
+                                <span class="bi bi-eye"></span>
+                                Προεπισκόπηση Markdown
+                            </div>
+                            <div class="preview-content" @onclick:stopPropagation="true">
+                                @if (string.IsNullOrWhiteSpace(editorContent))
+                                {
+                                    <p class="text-muted mb-0">Η προεπισκόπηση εμφανίζεται καθώς πληκτρολογείτε.</p>
+                                }
+                                else
+                                {
+                                    @PreviewMarkup
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        }
+
+        <section class="timeline-controls mb-4">
+            <div class="card info-card">
+                <div class="card-body d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
+                    <div>
+                        <h2 class="h6 text-uppercase text-muted mb-1">Φίλτρα προβολής</h2>
+                        <p class="mb-0 text-muted">Επιλέξτε κατάσταση για να επικεντρωθείτε στις ενημερώσεις που σας ενδιαφέρουν.</p>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row align-items-stretch gap-3">
+                        <select class="form-select timeline-filter" value="@statusFilter" @onchange="OnFilterChanged">
+                            <option value="">Όλες οι καταστάσεις</option>
+                            @foreach (var status in FilterableStatuses)
+                            {
+                                <option value="@status" selected="@status.Equals(statusFilter, StringComparison.OrdinalIgnoreCase)">@status</option>
+                            }
+                        </select>
+                        @if (IsSupervisorView)
+                        {
+                            <span class="badge bg-info-subtle text-info-emphasis">
+                                <span class="bi bi-eye-fill me-1"></span>
+                                Προβολή μόνο για ανάγνωση (επιβλέπων)
+                            </span>
+                        }
+                    </div>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <section class="timeline-section">
+            @if (timeline.Count == 0)
+            {
+                <div class="card info-card">
+                    <div class="card-body text-center text-muted py-5">
+                        <span class="bi bi-clipboard2-data mb-3 timeline-empty-icon"></span>
+                        <p class="mb-0">Δεν υπάρχουν ακόμη ενημερώσεις για εμφάνιση.</p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <ul class="timeline list-unstyled">
+                    @foreach (var item in timeline)
+                    {
+                        <li class="timeline-entry">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-card card">
+                                <div class="card-body">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="@StatusBadgeClass(item.Status)">@item.Status</span>
+                                            <span class="timeline-date">@FormatDate(item.OccurredOn)</span>
+                                            @if (WasEdited(item))
+                                            {
+                                                <span class="edited-indicator">
+                                                    <span class="bi bi-pencil-square"></span>
+                                                    Ενημερώθηκε @FormatDate(item.LastModifiedOn)
+                                                </span>
+                                            }
+                                        </div>
+                                        <span class="timeline-author text-muted small">
+                                            <span class="bi bi-person-circle me-1"></span>
+                                            Φοιτητής
+                                        </span>
+                                    </div>
+
+                                    <p class="timeline-snippet mb-1">@BuildSnippet(item.Note)</p>
+                                    <button class="btn btn-link p-0 mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#update-@item.Id" aria-expanded="false" aria-controls="update-@item.Id">
+                                        <span class="bi bi-arrows-expand"></span>
+                                        Προβολή πλήρους περιεχομένου
+                                    </button>
+                                    <div class="collapse mt-3" id="update-@item.Id">
+                                        <div class="timeline-full"
+                                             @onclick:stopPropagation="true"
+                                             @key="item.Id">
+                                            @((MarkupString)Markdown.ToHtml(item.Note, MarkdownPipeline))
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    }
 </div>
+
+@code {
+    private const int AutosaveDelayMilliseconds = 2500;
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+    private readonly List<ThesisUpdateTimelineDto> timeline = new();
+    private static readonly IReadOnlyList<string> AvailableStatuses = ThesisUpdateStatuses.All.ToArray();
+
+    private string editorContent = string.Empty;
+    private string previewHtml = string.Empty;
+    private string statusFilter = string.Empty;
+    private string? validationMessage;
+    private string? autosaveMessage;
+    private Guid? draftUpdateId;
+    private bool isSaving;
+    private CancellationTokenSource? autosaveCts;
+    private Guid loadedThesisId;
+
+    [SupplyParameterFromQuery(Name = "thesisId")]
+    public Guid ThesisId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "authorId")]
+    public Guid AuthorId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "role")]
+    public string? Role { get; set; }
+
+    private bool MissingContext => ThesisId == Guid.Empty || AuthorId == Guid.Empty;
+
+    private bool IsSupervisorView => string.Equals(Role, "supervisor", StringComparison.OrdinalIgnoreCase);
+
+    private IEnumerable<string> FilterableStatuses => IsSupervisorView
+        ? AvailableStatuses.Where(status => !status.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase))
+        : AvailableStatuses;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (MissingContext)
+        {
+            timeline.Clear();
+            return;
+        }
+
+        if (loadedThesisId != ThesisId)
+        {
+            loadedThesisId = ThesisId;
+            await LoadTimelineAsync();
+        }
+    }
+
+    private async Task LoadTimelineAsync()
+    {
+        if (MissingContext)
+        {
+            return;
+        }
+
+        var result = await Mediator.Send(new GetThesisUpdatesQuery
+        {
+            ThesisId = ThesisId,
+            IncludeDrafts = !IsSupervisorView,
+            Status = string.IsNullOrWhiteSpace(statusFilter) ? null : statusFilter,
+        });
+
+        timeline.Clear();
+        timeline.AddRange(result);
+
+        if (!IsSupervisorView && draftUpdateId is null && string.IsNullOrWhiteSpace(editorContent))
+        {
+            var draft = timeline.FirstOrDefault(update =>
+                update.AuthorId == AuthorId &&
+                update.Status.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase));
+
+            if (draft is not null)
+            {
+                draftUpdateId = draft.Id;
+                editorContent = draft.Note;
+                previewHtml = Markdown.ToHtml(editorContent, MarkdownPipeline);
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnFilterChanged(ChangeEventArgs args)
+    {
+        statusFilter = args.Value?.ToString() ?? string.Empty;
+        await LoadTimelineAsync();
+    }
+
+    private void OnEditorInput(ChangeEventArgs args)
+    {
+        editorContent = args.Value?.ToString() ?? string.Empty;
+        validationMessage = null;
+        previewHtml = Markdown.ToHtml(editorContent, MarkdownPipeline);
+        ScheduleAutosave();
+    }
+
+    private Task PublishAsync() => PersistAsync(
+        ThesisUpdateStatuses.PendingReview,
+        saveAsDraft: false,
+        isAutosave: false);
+
+    private Task SaveDraftAsync() => PersistAsync(
+        ThesisUpdateStatuses.Draft,
+        saveAsDraft: true,
+        isAutosave: false);
+
+    private async Task PersistAsync(string status, bool saveAsDraft, bool isAutosave)
+    {
+        if (MissingContext)
+        {
+            validationMessage = "Δεν εντοπίστηκε διπλωματική εργασία στη διεύθυνση. Προσθέστε thesisId και authorId στο URL.";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(editorContent))
+        {
+            validationMessage = "Παρακαλούμε γράψτε μια ενημέρωση πριν την αποθήκευση.";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        try
+        {
+            if (!isAutosave)
+            {
+                isSaving = true;
+            }
+
+            var command = new UpdateThesisProgressCommand
+            {
+                ThesisId = ThesisId,
+                AuthorId = AuthorId,
+                UpdateId = draftUpdateId,
+                Content = editorContent,
+                OccurredOn = DateTime.UtcNow,
+                Status = status,
+                SaveAsDraft = saveAsDraft,
+            };
+
+            var result = await Mediator.Send(command);
+
+            if (saveAsDraft)
+            {
+                draftUpdateId = result.UpdateId;
+                autosaveMessage = $"Αποθηκεύτηκε αυτόματα στις {DateTime.Now:HH:mm:ss}.";
+            }
+            else
+            {
+                draftUpdateId = null;
+                autosaveMessage = null;
+                editorContent = string.Empty;
+                previewHtml = string.Empty;
+            }
+
+            validationMessage = null;
+
+            await LoadTimelineAsync();
+        }
+        catch (ValidationException validationEx)
+        {
+            validationMessage = validationEx.Errors.FirstOrDefault()?.ErrorMessage ?? validationEx.Message;
+        }
+        catch (Exception ex)
+        {
+            validationMessage = ex.Message;
+        }
+        finally
+        {
+            if (!isAutosave)
+            {
+                isSaving = false;
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void ScheduleAutosave()
+    {
+        autosaveCts?.Cancel();
+        autosaveCts?.Dispose();
+
+        if (string.IsNullOrWhiteSpace(editorContent))
+        {
+            return;
+        }
+
+        autosaveCts = new CancellationTokenSource();
+        _ = AutosaveAsync(autosaveCts.Token);
+    }
+
+    private async Task AutosaveAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(AutosaveDelayMilliseconds), token);
+            await PersistAsync(ThesisUpdateStatuses.Draft, saveAsDraft: true, isAutosave: true);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private MarkupString PreviewMarkup => new(previewHtml);
+
+    private static string FormatDate(DateTime timestamp) => timestamp.ToLocalTime()
+        .ToString("dd MMM yyyy • HH:mm", CultureInfo.CurrentUICulture);
+
+    private static bool WasEdited(ThesisUpdateTimelineDto item) =>
+        Math.Abs((item.LastModifiedOn - item.OccurredOn).TotalMinutes) >= 1;
+
+    private static string BuildSnippet(string markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown))
+        {
+            return "—";
+        }
+
+        var html = Markdown.ToHtml(markdown, MarkdownPipeline);
+        var plain = Regex.Replace(html, "<[^>]+>", string.Empty);
+        plain = WebUtility.HtmlDecode(plain).Trim();
+
+        return plain.Length > 180 ? string.Concat(plain.AsSpan(0, 180), "…") : plain;
+    }
+
+    private static string StatusBadgeClass(string status) => status switch
+    {
+        var value when value.Equals(ThesisUpdateStatuses.PendingReview, StringComparison.OrdinalIgnoreCase) => "badge status-badge status-pending",
+        var value when value.Equals(ThesisUpdateStatuses.Accepted, StringComparison.OrdinalIgnoreCase) => "badge status-badge status-accepted",
+        var value when value.Equals(ThesisUpdateStatuses.NeedsRevision, StringComparison.OrdinalIgnoreCase) => "badge status-badge status-revision",
+        var value when value.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase) => "badge status-badge status-draft",
+        _ => "badge status-badge",
+    };
+
+    public void Dispose()
+    {
+        autosaveCts?.Cancel();
+        autosaveCts?.Dispose();
+    }
+}

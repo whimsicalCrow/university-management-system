@@ -25,9 +25,24 @@ public sealed class ThesisProjectRepository : IThesisProjectRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<ThesisProject?> GetForUpdateAsync(Guid thesisId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext
+            .ThesisProjects
+            .Include(thesis => thesis.Updates)
+            .ThenInclude(update => update.Attachments)
+            .FirstOrDefaultAsync(thesis => thesis.Id == thesisId, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task AddAsync(ThesisProject thesis, CancellationToken cancellationToken = default)
     {
         await _dbContext.ThesisProjects.AddAsync(thesis, cancellationToken).ConfigureAwait(false);
+        await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
         await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

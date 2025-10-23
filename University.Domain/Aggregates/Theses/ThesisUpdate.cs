@@ -4,12 +4,23 @@ public sealed class ThesisUpdate
 {
     private readonly List<ThesisAttachment> _attachments = new();
 
-    public ThesisUpdate(Guid authorId, string note, DateTime occurredOn, IReadOnlyCollection<ThesisAttachment>? attachments = null)
-        : this(Guid.NewGuid(), authorId, note, occurredOn, attachments)
+    public ThesisUpdate(
+        Guid authorId,
+        string note,
+        DateTime occurredOn,
+        string status,
+        IReadOnlyCollection<ThesisAttachment>? attachments = null)
+        : this(Guid.NewGuid(), authorId, note, occurredOn, status, attachments)
     {
     }
 
-    private ThesisUpdate(Guid id, Guid authorId, string note, DateTime occurredOn, IReadOnlyCollection<ThesisAttachment>? attachments)
+    private ThesisUpdate(
+        Guid id,
+        Guid authorId,
+        string note,
+        DateTime occurredOn,
+        string status,
+        IReadOnlyCollection<ThesisAttachment>? attachments)
     {
         if (authorId == Guid.Empty)
         {
@@ -21,10 +32,17 @@ public sealed class ThesisUpdate
             throw new ArgumentException("Note must be provided", nameof(note));
         }
 
-    Id = id;
-    AuthorId = authorId;
-    Note = note;
-    OccurredOn = occurredOn;
+        if (!ThesisUpdateStatuses.IsValid(status))
+        {
+            throw new ArgumentException("Unknown status for thesis update", nameof(status));
+        }
+
+        Id = id;
+        AuthorId = authorId;
+        Note = note;
+        OccurredOn = occurredOn;
+        Status = status;
+        LastModifiedOn = occurredOn;
 
         if (attachments is { Count: > 0 })
         {
@@ -36,6 +54,8 @@ public sealed class ThesisUpdate
     {
         Note = string.Empty;
         OccurredOn = DateTime.UtcNow;
+        Status = ThesisUpdateStatuses.Draft;
+        LastModifiedOn = OccurredOn;
     }
 
     public Guid Id { get; private set; }
@@ -45,6 +65,10 @@ public sealed class ThesisUpdate
     public string Note { get; private set; }
 
     public DateTime OccurredOn { get; private set; }
+
+    public string Status { get; private set; }
+
+    public DateTime LastModifiedOn { get; private set; }
 
     public IReadOnlyCollection<ThesisAttachment> Attachments => _attachments.AsReadOnly();
 
@@ -56,11 +80,24 @@ public sealed class ThesisUpdate
         }
 
         Note = note;
+        Touch();
+    }
+
+    public void ChangeStatus(string status)
+    {
+        if (!ThesisUpdateStatuses.IsValid(status))
+        {
+            throw new ArgumentException("Unknown status for thesis update", nameof(status));
+        }
+
+        Status = status;
+        Touch();
     }
 
     public void Reschedule(DateTime occurredOn)
     {
         OccurredOn = occurredOn;
+        Touch();
     }
 
     public void ReplaceAttachments(IReadOnlyCollection<ThesisAttachment>? attachments)
@@ -71,5 +108,12 @@ public sealed class ThesisUpdate
         {
             _attachments.AddRange(attachments);
         }
+
+        Touch();
+    }
+
+    private void Touch()
+    {
+        LastModifiedOn = DateTime.UtcNow;
     }
 }

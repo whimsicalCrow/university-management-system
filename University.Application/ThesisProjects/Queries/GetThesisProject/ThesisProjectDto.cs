@@ -10,9 +10,12 @@ public sealed record ThesisProjectDto(
     IReadOnlyCollection<ThesisUpdateDto> Updates);
 
 public sealed record ThesisUpdateDto(
+    Guid Id,
     Guid AuthorId,
     string Note,
     DateTime OccurredOn,
+    string Status,
+    DateTime LastModifiedOn,
     IReadOnlyCollection<ThesisAttachmentDto> Attachments);
 
 public sealed record ThesisAttachmentDto(
