@@ -1,3 +1,4 @@
+using System.Linq;
 using MediatR;
 using University.Domain.Repositories;
 
@@ -36,6 +37,25 @@ public sealed class GetThesisProjectQueryHandler : IRequestHandler<GetThesisProj
                     update.OccurredOn,
                     update.Status,
                     update.LastModifiedOn,
+                    update.Comments
+                        .Select(comment => new ThesisUpdateCommentDto(
+                            comment.Id,
+                            comment.AuthorId,
+                            comment.Content,
+                            comment.CreatedOn,
+                            comment.LastEditedOn,
+                            comment.ParentCommentId))
+                        .ToArray(),
+                    update.AuditTrail
+                        .Select(entry => new ThesisUpdateAuditEntryDto(
+                            entry.Id,
+                            entry.ActorId,
+                            entry.Action,
+                            entry.Details,
+                            entry.FromStatus,
+                            entry.ToStatus,
+                            entry.OccurredOn))
+                        .ToArray(),
                     update.Attachments
                         .Select(attachment => new ThesisAttachmentDto(
                             attachment.FileName,

@@ -15,3 +15,25 @@ Tasks:
 - Build UI components for professors to comment and respond with inline editing support.
 - Implement notification service delivering SignalR toast messages and email templates.
 - Add integration tests covering notification delivery and audit record generation.
+
+Dev Agent Record
+Tasks:
+- [ ] Create MediatR commands for submitting feedback, updating status, and logging actions.
+- [ ] Build UI components for professors to comment and respond with inline editing support.
+- [ ] Implement notification service delivering SignalR toast messages and email templates.
+- [ ] Add integration tests covering notification delivery and audit record generation.
+
+Debug Log References:
+-
+
+Completion Notes:
+-
+
+File List:
+-
+
+Change Log:
+-
+
+Agent Model Used: GPT-5-Codex
+Status: In Progress

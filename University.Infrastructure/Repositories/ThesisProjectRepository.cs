@@ -21,6 +21,10 @@ public sealed class ThesisProjectRepository : IThesisProjectRepository
             .AsNoTracking()
             .Include(thesis => thesis.Updates)
             .ThenInclude(update => update.Attachments)
+            .Include(thesis => thesis.Updates)
+            .ThenInclude(update => update.Comments)
+            .Include(thesis => thesis.Updates)
+            .ThenInclude(update => update.AuditTrail)
             .FirstOrDefaultAsync(thesis => thesis.Id == thesisId, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -31,6 +35,10 @@ public sealed class ThesisProjectRepository : IThesisProjectRepository
             .ThesisProjects
             .Include(thesis => thesis.Updates)
             .ThenInclude(update => update.Attachments)
+            .Include(thesis => thesis.Updates)
+            .ThenInclude(update => update.Comments)
+            .Include(thesis => thesis.Updates)
+            .ThenInclude(update => update.AuditTrail)
             .FirstOrDefaultAsync(thesis => thesis.Id == thesisId, cancellationToken)
             .ConfigureAwait(false);
     }

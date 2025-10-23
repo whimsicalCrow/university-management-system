@@ -16,6 +16,8 @@ public sealed record ThesisUpdateDto(
     DateTime OccurredOn,
     string Status,
     DateTime LastModifiedOn,
+    IReadOnlyCollection<ThesisUpdateCommentDto> Comments,
+    IReadOnlyCollection<ThesisUpdateAuditEntryDto> AuditTrail,
     IReadOnlyCollection<ThesisAttachmentDto> Attachments);
 
 public sealed record ThesisAttachmentDto(
@@ -23,3 +25,20 @@ public sealed record ThesisAttachmentDto(
     string ContentType,
     string BlobName,
     long SizeBytes);
+
+public sealed record ThesisUpdateCommentDto(
+    Guid Id,
+    Guid AuthorId,
+    string Content,
+    DateTime CreatedOn,
+    DateTime? LastEditedOn,
+    Guid? ParentCommentId);
+
+public sealed record ThesisUpdateAuditEntryDto(
+    Guid Id,
+    Guid ActorId,
+    string Action,
+    string? Details,
+    string? FromStatus,
+    string? ToStatus,
+    DateTime OccurredOn);

@@ -118,7 +118,7 @@ public sealed class ThesisProject : Entity
             return AddUpdate(authorId, note, occurredOn, status, attachments);
         }
 
-        var update = _updates.FirstOrDefault(existing => existing.Id == updateId)
+        var update = FindUpdate(updateId.Value)
             ?? throw new InvalidOperationException("The requested update does not exist for this thesis project.");
 
         if (update.AuthorId != authorId)
@@ -137,6 +137,64 @@ public sealed class ThesisProject : Entity
 
     public bool IsSupervisor(Guid userId) => userId == SupervisorId;
 
+    public ThesisUpdateComment AddFeedback(
+        Guid actorId,
+        Guid updateId,
+        string content,
+        Guid? parentCommentId = null)
+    {
+        EnsureParticipant(actorId);
+
+        var update = FindUpdate(updateId)
+            ?? throw new InvalidOperationException("The requested update does not exist for this thesis project.");
+
+        return update.AddComment(actorId, content, parentCommentId);
+    }
+
+    public ThesisUpdateComment EditFeedback(Guid actorId, Guid updateId, Guid commentId, string content)
+    {
+        EnsureParticipant(actorId);
+
+        var update = FindUpdate(updateId)
+            ?? throw new InvalidOperationException("The requested update does not exist for this thesis project.");
+
+        return update.EditComment(commentId, actorId, content);
+    }
+
+    public ThesisUpdateAuditEntry ChangeUpdateStatus(
+        Guid actorId,
+        Guid updateId,
+        string status,
+        string? details = null)
+    {
+        EnsureSupervisorActor(actorId);
+
+        var update = FindUpdate(updateId)
+            ?? throw new InvalidOperationException("The requested update does not exist for this thesis project.");
+
+        var previousStatus = update.Status;
+
+        update.ChangeStatus(status);
+
+        return update.AddAuditEntry(actorId, "StatusChanged", details, previousStatus, update.Status);
+    }
+
+    public ThesisUpdateAuditEntry LogUpdateAction(
+        Guid actorId,
+        Guid updateId,
+        string action,
+        string? details = null,
+        string? fromStatus = null,
+        string? toStatus = null)
+    {
+        EnsureParticipant(actorId);
+
+        var update = FindUpdate(updateId)
+            ?? throw new InvalidOperationException("The requested update does not exist for this thesis project.");
+
+        return update.AddAuditEntry(actorId, action, details, fromStatus, toStatus);
+    }
+
     private void EnsureStudentAuthor(Guid authorId)
     {
         if (authorId != StudentId)
@@ -144,4 +202,22 @@ public sealed class ThesisProject : Entity
             throw new InvalidOperationException("Only the thesis student can author progress updates.");
         }
     }
+
+    private void EnsureParticipant(Guid userId)
+    {
+        if (!IsParticipant(userId))
+        {
+            throw new UnauthorizedAccessException("Only thesis participants can perform this operation.");
+        }
+    }
+
+    private void EnsureSupervisorActor(Guid userId)
+    {
+        if (!IsSupervisor(userId))
+        {
+            throw new UnauthorizedAccessException("Only the supervising professor can perform this action.");
+        }
+    }
+
+    private ThesisUpdate? FindUpdate(Guid updateId) => _updates.FirstOrDefault(existing => existing.Id == updateId);
 }
