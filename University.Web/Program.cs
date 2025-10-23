@@ -1,49 +1,34 @@
-using Microsoft.AspNetCore.Builder;
-using FluentValidation;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using University.Application.Common.Behaviors;
-using University.Application.ThesisProjects.Commands.CreateThesisProject;
-using University.Domain.Interfaces;
-using University.Infrastructure.Persistence;
-using University.Infrastructure.Repositories;
+using University.Application.DependencyInjection;
+using University.Infrastructure.DependencyInjection;
+using University.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
+// Add services to the container.
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 
-// EF Core InMemory for demo (swap for SQL Server in production)
-builder.Services.AddDbContext<UniversityDbContext>(opt => opt.UseInMemoryDatabase("UniversityDb"));
-
-// Application services
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateThesisProjectCommand).Assembly));
-AssemblyScanner.FindValidatorsInAssembly(typeof(CreateThesisProjectCommand).Assembly)
-    .ForEach(result => builder.Services.AddScoped(result.InterfaceType, result.ValidatorType));
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
-// Repositories
-builder.Services.AddScoped<IStudentRepository, StudentRepository>();
-builder.Services.AddScoped<IProfessorRepository, ProfessorRepository>();
-builder.Services.AddScoped<IThesisProjectRepository, ThesisProjectRepository>();
-builder.Services.AddScoped<IThesisUpdateRepository, ThesisUpdateRepository>();
-builder.Services.AddScoped<IMeetingRepository, MeetingRepository>();
+builder.Services
+    .AddApplicationLayer()
+    .AddInfrastructureLayer(builder.Configuration);
 
 var app = builder.Build();
 
+// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseRouting();
 
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
+
+app.UseAntiforgery();
+
+app.UseStaticFiles();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();

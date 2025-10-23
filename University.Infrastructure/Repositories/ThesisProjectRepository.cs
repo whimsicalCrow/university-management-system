@@ -1,49 +1,33 @@
-using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using University.Domain.Entities;
-using University.Domain.Interfaces;
+using University.Domain.Aggregates.Theses;
+using University.Domain.Repositories;
 using University.Infrastructure.Persistence;
 
 namespace University.Infrastructure.Repositories;
 
-public class ThesisProjectRepository : IThesisProjectRepository
+public sealed class ThesisProjectRepository : IThesisProjectRepository
 {
-    private readonly UniversityDbContext _db;
+    private readonly UniversityDbContext _dbContext;
 
-    public ThesisProjectRepository(UniversityDbContext db) => _db = db;
-
-    public async Task<ThesisProject> AddAsync(ThesisProject project, CancellationToken cancellationToken = default)
+    public ThesisProjectRepository(UniversityDbContext dbContext)
     {
-        _db.ThesisProjects.Add(project);
-        await _db.SaveChangesAsync(cancellationToken);
-        return project;
+        _dbContext = dbContext;
     }
 
-    public Task<ThesisProject?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-        _db.ThesisProjects
-            .Include(p => p.Updates)
-            .Include(p => p.Meetings)
-            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
-
-    public async Task<IReadOnlyList<ThesisProject>> GetByProfessorAsync(Guid professorId, CancellationToken cancellationToken = default)
+    public async Task<ThesisProject?> GetByIdAsync(Guid thesisId, CancellationToken cancellationToken = default)
     {
-        return await _db.ThesisProjects
-            .Where(p => p.ProfessorId == professorId)
-            .OrderByDescending(p => p.LastUpdatedAtUtc ?? p.CreatedAtUtc)
-            .ToListAsync(cancellationToken);
+        return await _dbContext
+            .ThesisProjects
+            .AsNoTracking()
+            .Include(thesis => thesis.Updates)
+            .ThenInclude(update => update.Attachments)
+            .FirstOrDefaultAsync(thesis => thesis.Id == thesisId, cancellationToken)
+            .ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<ThesisProject>> GetByStudentAsync(Guid studentId, CancellationToken cancellationToken = default)
+    public async Task AddAsync(ThesisProject thesis, CancellationToken cancellationToken = default)
     {
-        return await _db.ThesisProjects
-            .Where(p => p.StudentId == studentId)
-            .OrderByDescending(p => p.LastUpdatedAtUtc ?? p.CreatedAtUtc)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task UpdateAsync(ThesisProject project, CancellationToken cancellationToken = default)
-    {
-        _db.ThesisProjects.Update(project);
-        await _db.SaveChangesAsync(cancellationToken);
+        await _dbContext.ThesisProjects.AddAsync(thesis, cancellationToken).ConfigureAwait(false);
+        await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

@@ -11,7 +11,7 @@ Acceptance Criteria:
 - Responsive layout renders correctly on desktop and tablet viewports per UI guidelines.
 
 Tasks:
-- Build CQRS query aggregating thesis summary data for the authenticated student.
-- Implement dashboard component with reusable cards for milestones, feedback, and shortcuts.
-- Add unit tests for the query projection and integration tests for authorization boundaries.
-- Conduct accessibility review ensuring keyboard navigation and ARIA labels cover interactive elements.
+- [x] Build CQRS query aggregating thesis summary data for the authenticated student.
+- [x] Implement dashboard component with reusable cards for milestones, feedback, and shortcuts.
+- [x] Add unit tests for the query projection and integration tests for authorization boundaries.
+- [x] Conduct accessibility review ensuring keyboard navigation and ARIA labels cover interactive elements.

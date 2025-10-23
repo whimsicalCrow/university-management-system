@@ -1,12 +1,10 @@
-using System.Collections.Generic;
-using System.Linq;
 using FluentValidation;
 using MediatR;
 
 namespace University.Application.Common.Behaviors;
 
 public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : notnull
+    where TRequest : notnull, IRequest<TResponse>
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
@@ -15,26 +13,31 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         _validators = validators;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async Task<TResponse> Handle(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
     {
         if (_validators.Any())
         {
             var context = new ValidationContext<TRequest>(request);
-            var validationResults = await Task.WhenAll(
-                _validators.Select(v => v.ValidateAsync(context, cancellationToken))
-            );
+            var failures = new List<FluentValidation.Results.ValidationFailure>();
 
-            var failures = validationResults
-                .SelectMany(result => result.Errors)
-                .Where(failure => failure is not null)
-                .ToList();
+            foreach (var validator in _validators)
+            {
+                var result = await validator.ValidateAsync(context, cancellationToken).ConfigureAwait(false);
+                if (!result.IsValid)
+                {
+                    failures.AddRange(result.Errors);
+                }
+            }
 
-            if (failures.Count != 0)
+            if (failures.Count > 0)
             {
                 throw new ValidationException(failures);
             }
         }
 
-        return await next();
+        return await next().ConfigureAwait(false);
     }
 }
