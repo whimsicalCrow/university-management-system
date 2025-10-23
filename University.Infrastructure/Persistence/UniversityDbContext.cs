@@ -1,66 +1,62 @@
 using Microsoft.EntityFrameworkCore;
-using University.Domain.Entities;
+using University.Domain.Aggregates.Theses;
 
 namespace University.Infrastructure.Persistence;
 
-public class UniversityDbContext : DbContext
+public sealed class UniversityDbContext : DbContext
 {
-    public UniversityDbContext(DbContextOptions<UniversityDbContext> options) : base(options) { }
+    public UniversityDbContext(DbContextOptions<UniversityDbContext> options)
+        : base(options)
+    {
+    }
 
-    public DbSet<Student> Students => Set<Student>();
-    public DbSet<Professor> Professors => Set<Professor>();
     public DbSet<ThesisProject> ThesisProjects => Set<ThesisProject>();
-    public DbSet<ThesisUpdate> ThesisUpdates => Set<ThesisUpdate>();
-    public DbSet<Meeting> Meetings => Set<Meeting>();
-    public DbSet<Course> Courses => Set<Course>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Student>(entity =>
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(UniversityDbContext).Assembly);
+
+        modelBuilder.Entity<ThesisProject>(builder =>
         {
-            entity.HasIndex(s => s.Email).IsUnique();
+            builder.HasKey(thesis => thesis.Id);
 
-            entity.HasOne<Professor>()
-                .WithMany()
-                .HasForeignKey(s => s.SupervisorId)
-                .OnDelete(DeleteBehavior.SetNull);
-        });
+            builder.Property(thesis => thesis.Title)
+                .HasMaxLength(200);
 
-        modelBuilder.Entity<ThesisProject>(entity =>
-        {
-            entity.HasOne<Student>()
-                .WithMany()
-                .HasForeignKey(p => p.StudentId)
-                .OnDelete(DeleteBehavior.Cascade);
+            builder.Property(thesis => thesis.Summary)
+                .HasMaxLength(2000);
 
-            entity.HasOne<Professor>()
-                .WithMany()
-                .HasForeignKey(p => p.ProfessorId)
-                .OnDelete(DeleteBehavior.Restrict);
+            builder.Property(thesis => thesis.Status)
+                .HasMaxLength(100);
 
-            entity.HasMany(p => p.Updates)
-                .WithOne()
-                .HasForeignKey(u => u.ThesisProjectId)
-                .OnDelete(DeleteBehavior.Cascade);
+            builder.OwnsMany(thesis => thesis.Updates, updatesBuilder =>
+            {
+                updatesBuilder.WithOwner().HasForeignKey("ThesisProjectId");
+                updatesBuilder.HasKey(update => update.Id);
 
-            entity.HasMany(p => p.Meetings)
-                .WithOne()
-                .HasForeignKey(m => m.ThesisProjectId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
+                updatesBuilder.Property(update => update.Note)
+                    .HasMaxLength(4000);
 
-        modelBuilder.Entity<ThesisUpdate>(entity =>
-        {
-            entity.Property(u => u.Notes).HasMaxLength(6000);
-            entity.Property(u => u.AuthorRole).HasMaxLength(50);
-        });
+                updatesBuilder.Property(update => update.OccurredOn)
+                    .HasPrecision(0);
 
-        modelBuilder.Entity<Meeting>(entity =>
-        {
-            entity.Property(m => m.Location).HasMaxLength(200);
-            entity.Property(m => m.Agenda).HasMaxLength(2000);
+                updatesBuilder.OwnsMany(update => update.Attachments, attachmentsBuilder =>
+                {
+                    attachmentsBuilder.WithOwner().HasForeignKey("ThesisUpdateId");
+                    attachmentsBuilder.HasKey(attachment => attachment.Id);
+
+                    attachmentsBuilder.Property(attachment => attachment.FileName)
+                        .HasMaxLength(255);
+
+                    attachmentsBuilder.Property(attachment => attachment.ContentType)
+                        .HasMaxLength(150);
+
+                    attachmentsBuilder.Property(attachment => attachment.BlobName)
+                        .HasMaxLength(512);
+                });
+            });
         });
     }
 }

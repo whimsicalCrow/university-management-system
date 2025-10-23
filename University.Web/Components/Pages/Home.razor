@@ -1,0 +1,145 @@
+﻿@page "/"
+
+<div class="container">
+	<section class="hero-section">
+		<div class="row align-items-center g-5">
+			<div class="col-lg-7">
+				<div class="hero-badge">
+					<span class="bi bi-mortarboard-fill"></span>
+					Σύστημα διπλωματικών εργασιών
+				</div>
+				<h1 class="hero-title">Μείνετε συγχρονισμένοι με κάθε βήμα της thesis journey</h1>
+				<p class="hero-lead">
+					Παρακολουθήστε την πρόοδο, ανταλλάξτε σημειώσεις και οργανώστε τις συναντήσεις σας μέσα σε ένα περιβάλλον
+					εμπνευσμένο από την αισθητική του Τμήματος ΗΜΜΥ του Πανεπιστημίου Πελοποννήσου.
+				</p>
+				<div class="hero-cta d-flex flex-wrap align-items-center gap-3">
+					<NavLink class="btn btn-primary" href="dashboard">Μετάβαση στο Dashboard</NavLink>
+					<NavLink class="btn btn-outline-light" href="meetings">Προγραμματισμός Συνάντησης</NavLink>
+				</div>
+			</div>
+			<div class="col-lg-5">
+				<div class="row g-3 hero-metrics">
+					<div class="col-sm-6">
+						<div class="metric-card">
+							<div class="metric-value">12</div>
+							<div class="metric-label">Ενεργές διπλωματικές</div>
+						</div>
+					</div>
+					<div class="col-sm-6">
+						<div class="metric-card">
+							<div class="metric-value">7</div>
+							<div class="metric-label">Ανοιχτά action items</div>
+						</div>
+					</div>
+					<div class="col-sm-6">
+						<div class="metric-card">
+							<div class="metric-value">3</div>
+							<div class="metric-label">Ερχόμενες συναντήσεις</div>
+						</div>
+					</div>
+					<div class="col-sm-6">
+						<div class="metric-card">
+							<div class="metric-value">5</div>
+							<div class="metric-label">Νέα σχόλια καθηγητών</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="row g-4 mb-5">
+		<div class="col-md-4">
+			<div class="card quick-action-card h-100">
+				<div class="card-body">
+					<div class="card-icon">1</div>
+					<h5 class="card-title mt-3">Καταγραφή Προόδου</h5>
+					<p class="card-text">Δημιουργήστε νέα ενημέρωση με σημειώσεις, συνδέσμους και βασικά παραδοτέα.</p>
+					<NavLink class="btn btn-link p-0 fw-semibold" href="updates">Άνοιγμα ενημερώσεων →</NavLink>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-4">
+			<div class="card quick-action-card h-100">
+				<div class="card-body">
+					<div class="card-icon">2</div>
+					<h5 class="card-title mt-3">Upload Αρχείων</h5>
+					<p class="card-text">Μεταφορτώστε draft κεφάλαια, datasets ή παρουσιάσεις για άμεση ανατροφοδότηση.</p>
+					<NavLink class="btn btn-link p-0 fw-semibold" href="updates">Μεταφόρτωση παραδοτέου →</NavLink>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-4">
+			<div class="card quick-action-card h-100">
+				<div class="card-body">
+					<div class="card-icon">3</div>
+					<h5 class="card-title mt-3">Αίτημα Feedback</h5>
+					<p class="card-text">Ενημερώστε τον επιβλέποντα για να σχολιάσει βασικά σημεία ή να εγκρίνει milestones.</p>
+					<NavLink class="btn btn-link p-0 fw-semibold" href="updates">Αποστολή αιτήματος →</NavLink>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<div class="section-divider"></div>
+
+	<section class="row g-4 align-items-stretch mt-0">
+		<div class="col-lg-8">
+			<div class="card info-card h-100">
+				<div class="card-body p-4 p-lg-5">
+					<div class="highlight-tag mb-3">
+						<span class="bi bi-lightning-charge-fill"></span>
+						Σημερινές Προτεραιότητες
+					</div>
+					<h2 class="section-heading mb-4">Τι χρειάζεται την προσοχή σας</h2>
+					<ul class="list-unstyled mb-0">
+						<li class="mb-4">
+							<h5 class="news-item-title mb-1">Αναθεώρηση κεφαλαίου «Μεθοδολογία»</h5>
+							<p class="mb-1 text-muted">Ο επιβλέπων πρόσθεσε σχόλια για περαιτέρω ανάλυση στην ενότητα αλγοριθμικής αξιολόγησης.</p>
+							<small class="text-uppercase text-muted">Προθεσμία: 27 Οκτωβρίου</small>
+						</li>
+						<li class="mb-4">
+							<h5 class="news-item-title mb-1">Ενημέρωση βιβλιογραφίας</h5>
+							<p class="mb-1 text-muted">Συμπεριλάβετε τις πρόσφατες δημοσιεύσεις που μοιράστηκε ο συνεπιβλέπων (IEEE Smart Systems).</p>
+							<small class="text-uppercase text-muted">Προθεσμία: 30 Οκτωβρίου</small>
+						</li>
+						<li>
+							<h5 class="news-item-title mb-1">Επιβεβαίωση ημερομηνίας παρουσίασης</h5>
+							<p class="mb-1 text-muted">Προτείνετε 2 εναλλακτικές ημερομηνίες για πρόβα παρουσίασης με την τριμελή επιτροπή.</p>
+							<small class="text-uppercase text-muted">Προθεσμία: 1 Νοεμβρίου</small>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="col-lg-4">
+			<div class="card ticker-card h-100">
+				<div class="card-body p-4">
+					<h4 class="mb-4">Σημαντικές Ειδοποιήσεις</h4>
+					<ul class="list-group list-group-flush">
+						<li class="list-group-item d-flex justify-content-between"><span>Workshop ΗΜΜΥ</span><strong>24/10</strong></li>
+						<li class="list-group-item d-flex justify-content-between"><span>Επιβεβαίωση meeting</span><strong>25/10</strong></li>
+						<li class="list-group-item d-flex justify-content-between"><span>Upload dataset</span><strong>26/10</strong></li>
+						<li class="list-group-item d-flex justify-content-between"><span>Νέο σχόλιο επιβλέποντα</span><strong>Σήμερα</strong></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<div class="section-divider"></div>
+
+	<section class="callout-panel mt-5">
+		<div class="row align-items-center g-4">
+			<div class="col-lg-8">
+				<h3 class="mb-3">Χτίζουμε μαζί μια διαδρομή αριστείας</h3>
+				<p class="mb-0">Συντονίστε όλα τα deliverables, διατηρήστε ιστορικό αποφάσεων και προετοιμαστείτε για την τελική παρουσίαση, με εργαλεία
+					εμπνευσμένα από την δυναμική αισθητική του ece.uop.gr.</p>
+			</div>
+			<div class="col-lg-4 text-lg-end">
+				<NavLink class="btn btn-light" href="updates">Ξεκινήστε το επόμενο update</NavLink>
+			</div>
+		</div>
+	</section>
+</div>

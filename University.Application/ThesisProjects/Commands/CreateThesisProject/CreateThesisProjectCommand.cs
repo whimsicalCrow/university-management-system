@@ -1,11 +1,9 @@
 using MediatR;
-using University.Application.DTOs;
 
 namespace University.Application.ThesisProjects.Commands.CreateThesisProject;
 
-public record CreateThesisProjectCommand(
+public sealed record CreateThesisProjectCommand(
     Guid StudentId,
-    Guid ProfessorId,
+    Guid SupervisorId,
     string Title,
-    string Description
-) : IRequest<ThesisProjectDto>;
+    string Summary) : IRequest<Guid>;

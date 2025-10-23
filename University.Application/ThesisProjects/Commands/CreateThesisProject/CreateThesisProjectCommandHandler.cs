@@ -1,57 +1,24 @@
 using MediatR;
-using University.Application.DTOs;
-using University.Domain.Entities;
-using University.Domain.Interfaces;
+using University.Domain.Aggregates.Theses;
+using University.Domain.Repositories;
 
 namespace University.Application.ThesisProjects.Commands.CreateThesisProject;
 
-public class CreateThesisProjectCommandHandler : IRequestHandler<CreateThesisProjectCommand, ThesisProjectDto>
+public sealed class CreateThesisProjectCommandHandler : IRequestHandler<CreateThesisProjectCommand, Guid>
 {
-    private readonly IStudentRepository _studentRepository;
-    private readonly IProfessorRepository _professorRepository;
-    private readonly IThesisProjectRepository _thesisProjectRepository;
+    private readonly IThesisProjectRepository _repository;
 
-    public CreateThesisProjectCommandHandler(
-        IStudentRepository studentRepository,
-        IProfessorRepository professorRepository,
-        IThesisProjectRepository thesisProjectRepository)
+    public CreateThesisProjectCommandHandler(IThesisProjectRepository repository)
     {
-        _studentRepository = studentRepository;
-        _professorRepository = professorRepository;
-        _thesisProjectRepository = thesisProjectRepository;
+        _repository = repository;
     }
 
-    public async Task<ThesisProjectDto> Handle(CreateThesisProjectCommand request, CancellationToken cancellationToken)
+    public async Task<Guid> Handle(CreateThesisProjectCommand request, CancellationToken cancellationToken)
     {
-        var student = await _studentRepository.GetByIdAsync(request.StudentId, cancellationToken)
-            ?? throw new InvalidOperationException($"Student {request.StudentId} not found.");
+        var thesis = new ThesisProject(request.StudentId, request.SupervisorId, request.Title, request.Summary);
 
-        var professor = await _professorRepository.GetByIdAsync(request.ProfessorId, cancellationToken)
-            ?? throw new InvalidOperationException($"Professor {request.ProfessorId} not found.");
+        await _repository.AddAsync(thesis, cancellationToken).ConfigureAwait(false);
 
-        student.SupervisorId = professor.Id;
-        await _studentRepository.UpdateAsync(student, cancellationToken);
-
-        var project = new ThesisProject
-        {
-            StudentId = student.Id,
-            ProfessorId = professor.Id,
-            Title = request.Title,
-            Description = request.Description,
-            Status = ThesisProjectStatus.InProgress
-        };
-
-        project = await _thesisProjectRepository.AddAsync(project, cancellationToken);
-
-        return new ThesisProjectDto(
-            project.Id,
-            project.Title,
-            project.Description,
-            project.StudentId,
-            project.ProfessorId,
-            project.Status.ToString(),
-            project.CreatedAtUtc,
-            project.LastUpdatedAtUtc
-        );
+        return thesis.Id;
     }
 }
