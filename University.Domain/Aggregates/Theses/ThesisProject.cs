@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using University.Domain.Common;
 
 namespace University.Domain.Aggregates.Theses;
@@ -88,10 +91,57 @@ public sealed class ThesisProject : Entity
         Status = status;
     }
 
-    public ThesisUpdate AddUpdate(Guid authorId, string note, DateTime occurredOn, IReadOnlyCollection<ThesisAttachment>? attachments = null)
+    public ThesisUpdate AddUpdate(
+        Guid authorId,
+        string note,
+        DateTime occurredOn,
+        string status,
+        IReadOnlyCollection<ThesisAttachment>? attachments = null)
     {
-        var update = new ThesisUpdate(authorId, note, occurredOn, attachments);
+        EnsureStudentAuthor(authorId);
+
+        var update = new ThesisUpdate(authorId, note, occurredOn, status, attachments);
         _updates.Add(update);
         return update;
+    }
+
+    public ThesisUpdate SaveOrUpdateProgress(
+        Guid authorId,
+        string note,
+        DateTime occurredOn,
+        string status,
+        Guid? updateId = null,
+        IReadOnlyCollection<ThesisAttachment>? attachments = null)
+    {
+        if (updateId is null || updateId == Guid.Empty)
+        {
+            return AddUpdate(authorId, note, occurredOn, status, attachments);
+        }
+
+        var update = _updates.FirstOrDefault(existing => existing.Id == updateId)
+            ?? throw new InvalidOperationException("The requested update does not exist for this thesis project.");
+
+        if (update.AuthorId != authorId)
+        {
+            throw new InvalidOperationException("Only the original author can modify this thesis update.");
+        }
+
+        update.UpdateNote(note);
+        update.Reschedule(occurredOn);
+        update.ChangeStatus(status);
+        update.ReplaceAttachments(attachments);
+        return update;
+    }
+
+    public bool IsParticipant(Guid userId) => userId == StudentId || userId == SupervisorId;
+
+    public bool IsSupervisor(Guid userId) => userId == SupervisorId;
+
+    private void EnsureStudentAuthor(Guid authorId)
+    {
+        if (authorId != StudentId)
+        {
+            throw new InvalidOperationException("Only the thesis student can author progress updates.");
+        }
     }
 }

@@ -35,6 +35,7 @@ public sealed class UniversityDbContext : DbContext
             {
                 updatesBuilder.WithOwner().HasForeignKey("ThesisProjectId");
                 updatesBuilder.HasKey(update => update.Id);
+                updatesBuilder.Property(update => update.Id).ValueGeneratedNever();
 
                 updatesBuilder.Property(update => update.Note)
                     .HasMaxLength(4000);
@@ -42,10 +43,17 @@ public sealed class UniversityDbContext : DbContext
                 updatesBuilder.Property(update => update.OccurredOn)
                     .HasPrecision(0);
 
+                updatesBuilder.Property(update => update.Status)
+                    .HasMaxLength(50);
+
+                updatesBuilder.Property(update => update.LastModifiedOn)
+                    .HasPrecision(0);
+
                 updatesBuilder.OwnsMany(update => update.Attachments, attachmentsBuilder =>
                 {
                     attachmentsBuilder.WithOwner().HasForeignKey("ThesisUpdateId");
                     attachmentsBuilder.HasKey(attachment => attachment.Id);
+                    attachmentsBuilder.Property(attachment => attachment.Id).ValueGeneratedNever();
 
                     attachmentsBuilder.Property(attachment => attachment.FileName)
                         .HasMaxLength(255);

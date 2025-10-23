@@ -30,9 +30,12 @@ public sealed class GetThesisProjectQueryHandler : IRequestHandler<GetThesisProj
             thesis.Status,
             thesis.Updates
                 .Select(update => new ThesisUpdateDto(
+                    update.Id,
                     update.AuthorId,
                     update.Note,
                     update.OccurredOn,
+                    update.Status,
+                    update.LastModifiedOn,
                     update.Attachments
                         .Select(attachment => new ThesisAttachmentDto(
                             attachment.FileName,
