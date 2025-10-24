@@ -145,6 +145,7 @@ public class ThesisProgressIntegrationTests
 
         services.AddScoped<IThesisProjectRepository, ThesisProjectRepository>();
 
+        services.AddLogging();
         services.AddApplicationLayer();
 
         return services.BuildServiceProvider();
