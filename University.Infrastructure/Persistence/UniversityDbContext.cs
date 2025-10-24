@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using University.Domain.Aggregates.Meetings;
 using University.Domain.Aggregates.Theses;
 using University.Domain.Notifications;
 
@@ -12,6 +13,8 @@ public sealed class UniversityDbContext : DbContext
     }
 
     public DbSet<ThesisProject> ThesisProjects => Set<ThesisProject>();
+
+    public DbSet<Meeting> Meetings => Set<Meeting>();
 
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
 
@@ -60,6 +63,64 @@ public sealed class UniversityDbContext : DbContext
 
             builder.Property(record => record.ReadOn)
                 .HasPrecision(0);
+        });
+
+        modelBuilder.Entity<Meeting>(builder =>
+        {
+            builder.HasKey(meeting => meeting.Id);
+
+            builder.HasIndex(meeting => new { meeting.SupervisorId, meeting.Status });
+
+            builder.Property(meeting => meeting.Agenda)
+                .HasMaxLength(4000)
+                .IsRequired();
+
+            builder.Property(meeting => meeting.Status)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            builder.Property(meeting => meeting.VideoConferenceUrl)
+                .HasMaxLength(512);
+
+            builder.Property(meeting => meeting.CreatedOn)
+                .HasPrecision(0);
+
+            builder.Property(meeting => meeting.LastUpdatedOn)
+                .HasPrecision(0);
+
+            builder.Property(meeting => meeting.ConfirmedOn)
+                .HasPrecision(0);
+
+            builder.OwnsMany(meeting => meeting.Slots, slotsBuilder =>
+            {
+                slotsBuilder.WithOwner().HasForeignKey("MeetingId");
+                slotsBuilder.HasKey(slot => slot.Id);
+                slotsBuilder.Property(slot => slot.Id).ValueGeneratedNever();
+
+                slotsBuilder.HasIndex(slot => slot.StartOn);
+
+                slotsBuilder.Property(slot => slot.StartOn)
+                    .HasPrecision(0);
+
+                slotsBuilder.Property(slot => slot.EndOn)
+                    .HasPrecision(0);
+
+                slotsBuilder.Property(slot => slot.Status)
+                    .HasMaxLength(50)
+                    .IsRequired();
+
+                slotsBuilder.Property(slot => slot.Note)
+                    .HasMaxLength(1000);
+
+                slotsBuilder.Property(slot => slot.ResponseNote)
+                    .HasMaxLength(1000);
+
+                slotsBuilder.Property(slot => slot.ProposedOn)
+                    .HasPrecision(0);
+
+                slotsBuilder.Property(slot => slot.RespondedOn)
+                    .HasPrecision(0);
+            });
         });
 
         modelBuilder.Entity<ThesisProject>(builder =>
