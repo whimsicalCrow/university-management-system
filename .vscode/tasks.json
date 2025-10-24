@@ -1,0 +1,82 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "create-folder-structure",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-Command",
+				"New-Item -ItemType Directory -Path 'docs/user stories/Architecture','docs/user stories/Backend','docs/user stories/UI','docs/user stories/Integration','docs/user stories/DevOps','docs/user stories/Infrastructure','docs/user stories/Security','docs/user stories/Documentation' -Force | Out-Null"
+			]
+		},
+		{
+			"label": "move-stories-1",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-Command",
+				"Move-Item 'docs/user stories/US-001-establish-architecture-baseline.txt' 'docs/user stories/Architecture/'; Move-Item 'docs/user stories/US-002-identity-access-foundation.txt' 'docs/user stories/Backend/'; Move-Item 'docs/user stories/US-003-ci-cd-pipeline-skeleton.txt' 'docs/user stories/DevOps/'; Move-Item 'docs/user stories/US-004-provision-dev-test-environments.txt' 'docs/user stories/Infrastructure/'; Move-Item 'docs/user stories/US-010-thesis-project-domain.txt' 'docs/user stories/Backend/'; Move-Item 'docs/user stories/US-011-supervisor-assignment-workflow.txt' 'docs/user stories/UI/'; Move-Item 'docs/user stories/US-012-student-dashboard.txt' 'docs/user stories/UI/'; Move-Item 'docs/user stories/US-013-cqrs-foundation.txt' 'docs/user stories/Backend/'"
+			]
+		},
+		{
+			"label": "move-stories-2",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-Command",
+				"Move-Item 'docs/user stories/US-020-thesis-update-timeline.txt' 'docs/user stories/UI/'; Move-Item 'docs/user stories/US-021-attachment-storage-pipeline.txt' 'docs/user stories/Backend/'; Move-Item 'docs/user stories/US-022-professor-feedback-loop.txt' 'docs/user stories/UI/'; Move-Item 'docs/user stories/US-030-meeting-scheduling-workflow.txt' 'docs/user stories/UI/'; Move-Item 'docs/user stories/US-031-calendar-integration.txt' 'docs/user stories/Integration/'; Move-Item 'docs/user stories/US-032-action-items-and-live-updates.txt' 'docs/user stories/UI/'; Move-Item 'docs/user stories/US-040-security-hardening.txt' 'docs/user stories/Security/'; Move-Item 'docs/user stories/US-041-load-testing-critical-flows.txt' 'docs/user stories/DevOps/'; Move-Item 'docs/user stories/US-042-release-documentation-and-pilot.txt' 'docs/user stories/Documentation/'"
+			]
+		},
+		{
+			"label": "list-user-stories",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-Command",
+				"Get-ChildItem -Recurse 'docs/user stories' | Select-Object FullName"
+			]
+		},
+		{
+			"label": "ensure-css-folder",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-Command",
+				"New-Item -ItemType Directory -Force -Path 'University.Web/wwwroot/css' | Out-Null"
+			]
+		},
+		{
+			"label": "write-site-css",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-Command",
+				"@'\n:root {\n    --uop-navy: #0d203a;\n    --uop-royal: #123a6b;\n    --uop-azure: #1c5fa8;\n    --uop-gold: #d8a24a;\n    --uop-cream: #f4f6fb;\n    --uop-slate: #23374d;\n}\n\n* {\n    box-sizing: border-box;\n}\n\nbody {\n    font-family: 'Montserrat', 'Source Sans 3', 'Segoe UI', sans-serif;\n    margin: 0;\n    background: linear-gradient(180deg, rgba(13, 32, 58, 0.04) 0%, rgba(241, 244, 250, 0.9) 120%);\n    color: #1c2434;\n    min-height: 100vh;\n}\n\na {\n    text-decoration: none;\n}\n\na:hover, a:focus {\n    text-decoration: none;\n}\n\n.site-header {\n    background: linear-gradient(90deg, var(--uop-navy) 0%, var(--uop-royal) 65%, var(--uop-azure) 100%);\n    color: #fff;\n    position: sticky;\n    top: 0;\n    z-index: 1040;\n}\n\n.site-navbar {\n    padding: 1rem 0;\n}\n\n.site-navbar .navbar-brand {\n    font-weight: 700;\n    text-transform: uppercase;\n    letter-spacing: 0.08em;\n    color: #fff;\n}\n\n.site-navbar .navbar-toggler {\n    border-color: rgba(255, 255, 255, 0.3);\n}\n\n.site-navbar .navbar-nav .nav-link {\n    color: rgba(255, 255, 255, 0.85);\n    font-weight: 500;\n    margin-left: 0.5rem;\n    margin-right: 0.5rem;\n    position: relative;\n    padding-bottom: 0.3rem;\n}\n\n.site-navbar .navbar-nav .nav-link.active,\n.site-navbar .navbar-nav .nav-link:hover {\n    color: #fff;\n}\n\n.site-navbar .navbar-nav .nav-link.active::after,\n.site-navbar .navbar-nav .nav-link:hover::after {\n    content: '';\n    position: absolute;\n    left: 0;\n    bottom: -0.35rem;\n    width: 100%;\n    height: 3px;\n    background: var(--uop-gold);\n    border-radius: 6px;\n}\n\n.site-navbar .btn-outline-light {\n    border-width: 2px;\n    font-weight: 600;\n    letter-spacing: 0.04em;\n}\n\n.layout-root {\n    display: flex;\n    flex-direction: column;\n    min-height: 100vh;\n}\n\n.site-main {\n    flex: 1 0 auto;\n    padding-top: 2rem;\n    padding-bottom: 4rem;\n}\n\n.site-footer {\n    background: var(--uop-navy);\n    color: rgba(255, 255, 255, 0.82);\n    padding: 2.5rem 0;\n    flex-shrink: 0;\n    font-size: 0.95rem;\n}\n\n.site-footer a {\n    color: #fff;\n}\n\n.hero-section {\n    position: relative;\n    background: linear-gradient(115deg, rgba(18, 58, 107, 0.95) 0%, rgba(12, 30, 54, 0.92) 55%, rgba(28, 95, 168, 0.85) 100%);\n    color: #fff;\n    border-radius: 24px;\n    overflow: hidden;\n    padding: 4.5rem 3rem;\n    margin-bottom: 3rem;\n    box-shadow: 0 25px 45px rgba(15, 30, 54, 0.25);\n}\n\n.hero-section::after {\n    content: '';\n    position: absolute;\n    inset: 15% -20% auto 55%;\n    background: radial-gradient(circle at center, rgba(216, 162, 74, 0.45), transparent 55%);\n    transform: rotate(-8deg);\n}\n\n.hero-badge {\n    display: inline-flex;\n    align-items: center;\n    gap: 0.5rem;\n    background: rgba(255, 255, 255, 0.12);\n    border-radius: 999px;\n    padding: 0.4rem 1.1rem;\n    font-size: 0.85rem;\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n    margin-bottom: 1.5rem;\n}\n\n.hero-title {\n    font-size: clamp(2.4rem, 3vw, 3.25rem);\n    font-weight: 700;\n    line-height: 1.15;\n    margin-bottom: 1.5rem;\n}\n\n.hero-lead {\n    font-size: 1.15rem;\n    max-width: 42rem;\n    margin-bottom: 2rem;\n}\n\n.hero-cta .btn-primary {\n    background-color: var(--uop-gold);\n    border-color: var(--uop-gold);\n    color: #1b2230;\n    font-weight: 600;\n    padding: 0.85rem 1.8rem;\n    box-shadow: 0 18px 32px rgba(216, 162, 74, 0.35);\n}\n\n.hero-cta .btn-outline-light {\n    border-color: rgba(255, 255, 255, 0.65);\n    color: #fff;\n    font-weight: 600;\n}\n\n.hero-cta .btn-outline-light:hover,\n.hero-cta .btn-outline-light:focus {\n    background: rgba(255, 255, 255, 0.18);\n    border-color: rgba(255, 255, 255, 0.9);\n}\n\n.hero-metrics {\n    margin-top: 3rem;\n}\n\n.metric-card {\n    background: rgba(255, 255, 255, 0.1);\n    border: 1px solid rgba(255, 255, 255, 0.18);\n    border-radius: 20px;\n    padding: 1.25rem 1.5rem;\n    backdrop-filter: blur(6px);\n    min-height: 128px;\n}\n\n.metric-value {\n    font-size: 2rem;\n    font-weight: 700;\n}\n\n.metric-label {\n    opacity: 0.85;\n    font-weight: 500;\n}\n\n.section-heading {\n    font-weight: 700;\n    color: var(--uop-slate);\n}\n\n.quick-action-card,\n.info-card,\n.ticker-card {\n    border-radius: 16px;\n    border: none;\n    box-shadow: 0 12px 24px rgba(15, 30, 54, 0.08);\n    transition: transform 0.25s ease, box-shadow 0.25s ease;\n}\n\n.quick-action-card:hover,\n.info-card:hover,\n.ticker-card:hover {\n    transform: translateY(-6px);\n    box-shadow: 0 18px 38px rgba(15, 30, 54, 0.14);\n}\n\n.quick-action-card .card-title {\n    color: var(--uop-royal);\n    font-weight: 600;\n}\n\n.ticker-card {\n    background: linear-gradient(145deg, rgba(18, 58, 107, 0.88), rgba(28, 95, 168, 0.88));\n    color: #fff;\n}\n\n.ticker-card .list-group-item {\n    background: transparent;\n    color: #fff;\n    border-color: rgba(255, 255, 255, 0.2);\n}\n\n.ticker-card .list-group-item strong {\n    color: #ffe1a8;\n}\n\n.news-item-title {\n    font-weight: 600;\n    color: var(--uop-slate);\n}\n\n.highlight-tag {\n    display: inline-flex;\n    align-items: center;\n    gap: 0.35rem;\n    background: rgba(18, 58, 107, 0.08);\n    color: var(--uop-royal);\n    border-radius: 999px;\n    padding: 0.35rem 0.85rem;\n    font-size: 0.78rem;\n    text-transform: uppercase;\n    letter-spacing: 0.08em;\n}\n\n.callout-panel {\n    background: linear-gradient(120deg, rgba(13, 32, 58, 0.94) 0%, rgba(18, 58, 107, 0.92) 100%);\n    border-radius: 24px;\n    color: #fff;\n    padding: 2.5rem;\n    box-shadow: 0 24px 40px rgba(13, 32, 58, 0.35);\n}\n\n.callout-panel h3 {\n    font-weight: 700;\n}\n\n.callout-panel .btn-light {\n    color: var(--uop-royal);\n    font-weight: 600;\n    padding: 0.75rem 1.6rem;\n}\n\n.section-divider {\n    height: 1px;\n    background: linear-gradient(90deg, rgba(18, 58, 107, 0), rgba(18, 58, 107, 0.28), rgba(18, 58, 107, 0));\n    margin: 3rem 0;\n}\n\n.card-icon {\n    width: 44px;\n    height: 44px;\n    border-radius: 50%;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    background: rgba(18, 58, 107, 0.12);\n    color: var(--uop-royal);\n    font-weight: 600;\n}\n\n@media (max-width: 991.98px) {\n    .site-main {\n        padding-top: 1.5rem;\n    }\n\n    .hero-section {\n        padding: 3rem 2.25rem;\n        text-align: center;\n    }\n\n    .hero-metrics {\n        justify-content: center;\n    }\n\n    .hero-cta .btn {\n        width: 100%;\n        margin-bottom: 1rem;\n    }\n\n    .callout-panel {\n        text-align: center;\n    }\n}\n\n@media (max-width: 575.98px) {\n    .hero-section {\n        padding: 2.5rem 1.5rem;\n    }\n\n    .hero-title {\n        font-size: 2.1rem;\n    }\n}\n'@ | Set-Content -Encoding UTF8 -Path 'University.Web/wwwroot/css/site.css'"
+			]
+		},
+		{
+			"label": "update-site-css",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-Command",
+				"(Get-Content 'University.Web/wwwroot/css/site.css') -replace \"@media \\(max-width: 991.98px\\)\",\".page-section {\\n    margin-top: 2.5rem;\\n}\\n\\n@media (max-width: 991.98px)\" | Set-Content -Encoding UTF8 'University.Web/wwwroot/css/site.css'"
+			]
+		}
+	]
+}

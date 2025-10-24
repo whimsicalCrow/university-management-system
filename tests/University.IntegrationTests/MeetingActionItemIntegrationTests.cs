@@ -38,7 +38,7 @@ public sealed class MeetingActionItemIntegrationTests
             "Prepare draft outline",
             DateTime.UtcNow.AddDays(2)));
 
-    var actionItem = addResult.ActionItems.Single();
+        var actionItem = addResult.ActionItems.Single();
 
         var updatedDescription = "Prepare draft outline with bibliography";
 
@@ -119,9 +119,9 @@ public sealed class MeetingActionItemIntegrationTests
             outsiderId,
             true)));
 
-    var addedEvent = Assert.Single(broadcaster.Events);
-    Assert.Equal("ActionItemAdded", addedEvent.EventName);
-    Assert.Equal(meetingId, addedEvent.MeetingId);
+        var addedEvent = Assert.Single(broadcaster.Events);
+        Assert.Equal("ActionItemAdded", addedEvent.EventName);
+        Assert.Equal(meetingId, addedEvent.MeetingId);
     }
 
     private static async Task<(Guid MeetingId, Guid StudentId, Guid SupervisorId)> SeedMeetingAsync(IMeetingRepository repository)
@@ -145,6 +145,7 @@ public sealed class MeetingActionItemIntegrationTests
 
         services.AddDbContext<UniversityDbContext>(options => options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
         services.AddScoped<IMeetingRepository, MeetingRepository>();
+    services.AddLogging();
         services.AddApplicationLayer();
 
         broadcaster = new TestMeetingActionItemBroadcaster();
