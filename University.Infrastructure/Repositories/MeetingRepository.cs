@@ -20,6 +20,7 @@ public sealed class MeetingRepository : IMeetingRepository
             .Meetings
             .AsNoTracking()
             .Include(meeting => meeting.Slots)
+            .Include(meeting => meeting.ActionItems)
             .FirstOrDefaultAsync(meeting => meeting.Id == meetingId, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -29,6 +30,7 @@ public sealed class MeetingRepository : IMeetingRepository
         return await _dbContext
             .Meetings
             .Include(meeting => meeting.Slots)
+            .Include(meeting => meeting.ActionItems)
             .FirstOrDefaultAsync(meeting => meeting.Id == meetingId, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -42,6 +44,7 @@ public sealed class MeetingRepository : IMeetingRepository
             .Meetings
             .AsNoTracking()
             .Include(meeting => meeting.Slots)
+            .Include(meeting => meeting.ActionItems)
             .Where(meeting =>
                 (meeting.StudentId == participantId || meeting.SupervisorId == participantId) &&
                 meeting.Slots.Any(slot => slot.StartOn >= fromUtc))

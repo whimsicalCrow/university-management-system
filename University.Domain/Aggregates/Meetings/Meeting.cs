@@ -8,6 +8,7 @@ namespace University.Domain.Aggregates.Meetings;
 public sealed class Meeting : Entity
 {
     private readonly List<MeetingSlot> _slots = new();
+    private readonly List<MeetingActionItem> _actionItems = new();
 
     public Meeting(
         Guid thesisProjectId,
@@ -15,7 +16,8 @@ public sealed class Meeting : Entity
         Guid supervisorId,
         string agenda,
         IEnumerable<MeetingSlot> proposedSlots,
-        string? videoConferenceUrl = null)
+        string? videoConferenceUrl = null,
+        IEnumerable<MeetingActionItem>? actionItems = null)
     {
         if (thesisProjectId == Guid.Empty)
         {
@@ -57,6 +59,14 @@ public sealed class Meeting : Entity
         {
             AddSlotInternal(slot);
         }
+
+        if (actionItems is not null)
+        {
+            foreach (var actionItem in actionItems)
+            {
+                AddActionItemInternal(actionItem);
+            }
+        }
     }
 
     private Meeting()
@@ -87,6 +97,8 @@ public sealed class Meeting : Entity
 
     public IReadOnlyCollection<MeetingSlot> Slots => _slots.AsReadOnly();
 
+    public IReadOnlyCollection<MeetingActionItem> ActionItems => _actionItems.AsReadOnly();
+
     public bool IsConfirmed => Status == MeetingStatuses.Confirmed;
 
     public MeetingSlot ProposeSlot(Guid actorId, DateTime startOn, DateTime endOn, string? note = null)
@@ -104,6 +116,51 @@ public sealed class Meeting : Entity
         AddSlotInternal(slot);
         UpdateLastUpdated();
         return slot;
+    }
+
+    public MeetingActionItem AddActionItem(Guid actorId, Guid ownerId, string description, DateTime? dueOnUtc = null)
+    {
+        EnsureParticipant(actorId);
+        EnsureParticipant(ownerId);
+
+        var actionItem = new MeetingActionItem(actorId, ownerId, description, dueOnUtc);
+        AddActionItemInternal(actionItem);
+        UpdateLastUpdated();
+        return actionItem;
+    }
+
+    public MeetingActionItem UpdateActionItem(Guid actorId, Guid actionItemId, Guid ownerId, string description, DateTime? dueOnUtc)
+    {
+        EnsureParticipant(actorId);
+        EnsureParticipant(ownerId);
+
+        var actionItem = FindActionItem(actionItemId) ?? throw new InvalidOperationException("The requested action item does not exist.");
+
+        actionItem.Update(ownerId, description, dueOnUtc);
+        UpdateLastUpdated();
+        return actionItem;
+    }
+
+    public MeetingActionItem CompleteActionItem(Guid actorId, Guid actionItemId)
+    {
+        EnsureParticipant(actorId);
+
+        var actionItem = FindActionItem(actionItemId) ?? throw new InvalidOperationException("The requested action item does not exist.");
+
+        actionItem.Complete();
+        UpdateLastUpdated();
+        return actionItem;
+    }
+
+    public MeetingActionItem ReopenActionItem(Guid actorId, Guid actionItemId)
+    {
+        EnsureParticipant(actorId);
+
+        var actionItem = FindActionItem(actionItemId) ?? throw new InvalidOperationException("The requested action item does not exist.");
+
+        actionItem.Reopen();
+        UpdateLastUpdated();
+        return actionItem;
     }
 
     public void AcceptSlot(Guid actorId, Guid slotId, string? videoConferenceUrl = null)
@@ -192,6 +249,11 @@ public sealed class Meeting : Entity
         return _slots.FirstOrDefault(slot => slot.Id == slotId);
     }
 
+    private MeetingActionItem? FindActionItem(Guid actionItemId)
+    {
+        return _actionItems.FirstOrDefault(item => item.Id == actionItemId);
+    }
+
     private void EnsureParticipant(Guid userId)
     {
         if (userId != StudentId && userId != SupervisorId)
@@ -211,5 +273,18 @@ public sealed class Meeting : Entity
     private void UpdateLastUpdated()
     {
         LastUpdatedOn = DateTime.UtcNow;
+    }
+
+    private void AddActionItemInternal(MeetingActionItem actionItem)
+    {
+        if (actionItem is null)
+        {
+            throw new ArgumentNullException(nameof(actionItem));
+        }
+
+        EnsureParticipant(actionItem.CreatedById);
+        EnsureParticipant(actionItem.OwnerId);
+
+        _actionItems.Add(actionItem);
     }
 }

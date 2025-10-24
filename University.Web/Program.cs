@@ -1,6 +1,9 @@
 using University.Application.DependencyInjection;
+using University.Application.Meetings.Notifications;
 using University.Infrastructure.DependencyInjection;
 using University.Web.Components;
+using University.Web.Hubs;
+using University.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +14,9 @@ builder.Services.AddRazorComponents()
 builder.Services
     .AddApplicationLayer()
     .AddInfrastructureLayer(builder.Configuration);
+
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IMeetingActionItemBroadcaster, SignalRMeetingActionItemBroadcaster>();
 
 var app = builder.Build();
 
@@ -30,5 +36,7 @@ app.UseAntiforgery();
 app.UseStaticFiles();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapHub<MeetingActionItemHub>("/hubs/meeting-action-items");
 
 app.Run();

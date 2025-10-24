@@ -19,7 +19,8 @@ internal static class MeetingMappingExtensions
             meeting.CreatedOn,
             meeting.LastUpdatedOn,
             meeting.ConfirmedOn,
-            meeting.Slots.Select(slot => slot.ToMeetingSlotDto()).ToArray());
+            meeting.Slots.Select(slot => slot.ToMeetingSlotDto()).ToArray(),
+            meeting.ActionItems.Select(item => item.ToMeetingActionItemDto()).ToArray());
     }
 
     private static MeetingSlotDto ToMeetingSlotDto(this MeetingSlot slot)
@@ -34,5 +35,19 @@ internal static class MeetingMappingExtensions
             slot.ResponseNote,
             slot.ProposedOn,
             slot.RespondedOn);
+    }
+
+    private static MeetingActionItemDto ToMeetingActionItemDto(this MeetingActionItem item)
+    {
+        return new MeetingActionItemDto(
+            item.Id,
+            item.CreatedById,
+            item.OwnerId,
+            item.Description,
+            item.Status,
+            item.DueOnUtc,
+            item.CreatedOnUtc,
+            item.LastUpdatedOnUtc,
+            item.CompletedOnUtc);
     }
 }

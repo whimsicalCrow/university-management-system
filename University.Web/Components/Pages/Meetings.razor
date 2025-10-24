@@ -1,14 +1,20 @@
 @page "/meetings"
 @inject ISender Sender
+@inject NavigationManager NavigationManager
 @using System.Globalization
 @using System.ComponentModel.DataAnnotations
 @using System.Linq
+@using Microsoft.AspNetCore.SignalR.Client
 @using University.Application.Meetings.Commands.AcceptMeetingSlot
+@using University.Application.Meetings.Commands.AddMeetingActionItem
 @using University.Application.Meetings.Commands.DeclineMeetingSlot
 @using University.Application.Meetings.Commands.ProposeMeeting
+@using University.Application.Meetings.Commands.SetMeetingActionItemCompletion
+@using University.Application.Meetings.Commands.UpdateMeetingActionItem
 @using University.Application.Meetings.Queries.GetParticipantMeetings
 @using University.Application.ThesisProjects.Commands.CreateThesisProject
 @using University.Application.ThesisProjects.Queries.GetThesisProject
+@implements IAsyncDisposable
 
 <div class="container page-section">
     <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
@@ -113,6 +119,138 @@
                                 </table>
                             </div>
 
+                            @{
+                                var actionItems = GetActionItems(meeting.Id);
+                                var newActionItemForm = GetNewActionItemForm(meeting);
+                                var meetingBusy = _busyMeetings.Contains(meeting.Id);
+                            }
+
+                            <div class="mt-4 border-top pt-3">
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h4 class="h6 fw-semibold mb-0">Action Items</h4>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" @onclick="() => AddActionItemAsync(meeting)" disabled="@(meetingBusy || string.IsNullOrWhiteSpace(newActionItemForm.Description))">
+                                        <span class="bi bi-plus-lg"></span> Add item
+                                    </button>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(newActionItemForm.Error))
+                                {
+                                    <div class="alert alert-warning py-2 px-3 small mb-3">@newActionItemForm.Error</div>
+                                }
+
+                                @if (actionItems.Count == 0)
+                                {
+                                    <p class="text-muted small mb-3">Capture next steps agreed during the meeting so everyone knows who owns the follow-up.</p>
+                                }
+                                else
+                                {
+                                    <div class="table-responsive rounded">
+                                        <table class="table align-middle mb-3">
+                                            <thead>
+                                                <tr>
+                                                    <th>Description</th>
+                                                    <th>Owner</th>
+                                                    <th>Due</th>
+                                                    <th>Status</th>
+                                                    <th class="text-end">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in actionItems.OrderBy(i => i.IsCompleted).ThenBy(i => i.DueOnUtc ?? DateTime.MaxValue))
+                                                {
+                                                    <tr class="@(item.IsCompleted ? "table-light" : string.Empty)">
+                                                        <td style="min-width: 240px;">
+                                                            @if (item.IsEditing)
+                                                            {
+                                                                <InputTextArea class="form-control" @bind-Value="item.PendingDescription" rows="2" disabled="@(meetingBusy || item.IsSaving)" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="fw-semibold">@item.Description</div>
+                                                                <div class="text-muted small">Updated @item.LastUpdatedOnUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</div>
+                                                            }
+                                                            @if (!string.IsNullOrWhiteSpace(item.Error))
+                                                            {
+                                                                <div class="text-danger small mt-1">@item.Error</div>
+                                                            }
+                                                        </td>
+                                                        <td style="min-width: 140px;">
+                                                            @if (item.IsEditing)
+                                                            {
+                                                                <select class="form-select form-select-sm" @bind="item.PendingOwnerId" disabled="@(meetingBusy || item.IsSaving)">
+                                                                    <option value="@meeting.StudentId">Student</option>
+                                                                    <option value="@meeting.SupervisorId">Professor</option>
+                                                                </select>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-light text-dark">@GetParticipantDisplayName(item.OwnerId, meeting)</span>
+                                                            }
+                                                        </td>
+                                                        <td style="min-width: 160px;">
+                                                            @if (item.IsEditing)
+                                                            {
+                                                                <input type="datetime-local" class="form-control form-control-sm" value="@item.PendingDueOnInput" @onchange="args => UpdateActionItemPendingDueDate(item, args.Value?.ToString())" disabled="@(meetingBusy || item.IsSaving)" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="small">@item.DueOnDisplay</span>
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input" type="checkbox" role="switch" checked="@item.IsCompleted" disabled="@(meetingBusy || item.IsSaving || item.IsDraft)" @onchange="args => OnCompletionToggleAsync(meeting, item, args.Value)" />
+                                                                <label class="form-check-label small">@item.Status</label>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            @if (item.IsEditing)
+                                                            {
+                                                                <button class="btn btn-sm btn-primary me-2" @onclick="() => SaveActionItemEditsAsync(meeting, item)" disabled="@(meetingBusy || item.IsSaving)">
+                                                                    <span class="bi bi-check-lg"></span>
+                                                                </button>
+                                                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => CancelActionItemEdit(item)" disabled="@(meetingBusy || item.IsSaving)">
+                                                                    Cancel
+                                                                </button>
+                                                            }
+                                                            else
+                                                            {
+                                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => BeginActionItemEdit(item)" disabled="@(meetingBusy || item.IsSaving || item.IsDraft)">
+                                                                    <span class="bi bi-pencil"></span>
+                                                                </button>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label">Description</label>
+                                        <InputTextArea class="form-control" @bind-Value="newActionItemForm.Description" rows="2" placeholder="Document next steps..." disabled="@meetingBusy" />
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label">Owner</label>
+                                        <select class="form-select" @bind="newActionItemForm.OwnerId" disabled="@meetingBusy">
+                                            <option value="@meeting.StudentId">Student</option>
+                                            <option value="@meeting.SupervisorId">Professor</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label">Due date</label>
+                                        <input type="datetime-local" class="form-control" value="@newActionItemForm.DueOnInput" @onchange="args => UpdateNewActionItemDueDate(newActionItemForm, args.Value?.ToString())" disabled="@meetingBusy" />
+                                    </div>
+                                    <div class="col-12 col-md-1 text-md-end">
+                                        <button type="button" class="btn btn-primary" @onclick="() => AddActionItemAsync(meeting)" disabled="@(meetingBusy || string.IsNullOrWhiteSpace(newActionItemForm.Description))">
+                                            <span class="bi bi-plus-lg"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
                             @if (_viewAsProfessor && meeting.Status == MeetingStatuses.Proposed && meeting.Slots.Any(slot => slot.Status == MeetingSlotStatuses.Proposed))
                             {
                                 var responseModel = GetResponseModel(meeting.Id);
@@ -134,7 +272,7 @@
                                             <input class="form-control" @bind="responseModel.VideoConferenceUrl" placeholder="https://..." />
                                         </div>
                                         <div class="col-12 col-md-4 text-md-end">
-                                            <button class="btn btn-success" @onclick="() => AcceptMeetingAsync(meeting.Id)" disabled="@_isBusy">
+                                            <button class="btn btn-success" @onclick="() => AcceptMeetingAsync(meeting.Id)" disabled="@(_isBusy || meetingBusy)">
                                                 <span class="bi bi-check-circle me-1"></span> Accept Slot
                                             </button>
                                         </div>
@@ -158,7 +296,7 @@
                                             <input class="form-control" @bind="responseModel.AlternativeNote" />
                                         </div>
                                         <div class="col-12 text-md-end">
-                                            <button class="btn btn-outline-secondary" @onclick="() => DeclineMeetingAsync(meeting.Id)" disabled="@_isBusy">
+                                            <button class="btn btn-outline-secondary" @onclick="() => DeclineMeetingAsync(meeting.Id)" disabled="@(_isBusy || meetingBusy)">
                                                 <span class="bi bi-x-circle me-1"></span> Decline &amp; Suggest
                                             </button>
                                         </div>
@@ -262,6 +400,11 @@
     private readonly List<SlotInputModel> _slots = new();
     private readonly Dictionary<Guid, MeetingResponseModel> _responseModels = new();
     private readonly List<MeetingDto> _meetings = new();
+    private readonly Dictionary<Guid, List<ActionItemViewModel>> _actionItems = new();
+    private readonly Dictionary<Guid, CreateActionItemFormModel> _newActionItemForms = new();
+    private readonly HashSet<Guid> _busyMeetings = new();
+    private readonly HashSet<Guid> _joinedMeetingGroups = new();
+    private HubConnection? _hubConnection;
 
     private bool _viewAsProfessor;
     private bool _isBusy;
@@ -279,6 +422,7 @@
         {
             _isBusy = true;
             await EnsureSampleThesisAsync();
+            await EnsureSampleMeetingAsync();
             if (_slots.Count == 0)
             {
                 AddSlot();
@@ -308,20 +452,71 @@
         }
     }
 
+    private async Task EnsureSampleMeetingAsync()
+    {
+        var existing = await Sender.Send(new GetParticipantMeetingsQuery(_sampleStudentId));
+        if (existing.Count > 0)
+        {
+            return;
+        }
+
+        var utcToday = DateTime.UtcNow;
+        var firstSlotStart = new DateTime(utcToday.Year, utcToday.Month, utcToday.Day, 9, 0, 0, DateTimeKind.Utc).AddDays(2);
+        var secondSlotStart = firstSlotStart.AddDays(1).AddHours(3);
+
+        var slots = new[]
+        {
+            new ProposedMeetingSlotDto(firstSlotStart, firstSlotStart.AddHours(1), "Review project milestones and blockers."),
+            new ProposedMeetingSlotDto(secondSlotStart, secondSlotStart.AddHours(1), "Backup window after lab commitments."),
+        };
+
+        var meeting = await Sender.Send(new ProposeMeetingCommand(
+            _sampleThesisId,
+            _sampleStudentId,
+            "Weekly thesis sync & action planning",
+            slots,
+            "https://teams.microsoft.com/l/meetup-join/19:sample"));
+
+        await Sender.Send(new AddMeetingActionItemCommand(
+            meeting.Id,
+            _sampleStudentId,
+            _sampleStudentId,
+            "Upload updated literature review notes",
+            DateTime.UtcNow.AddDays(3)));
+
+        await Sender.Send(new AddMeetingActionItemCommand(
+            meeting.Id,
+            _sampleProfessorId,
+            _sampleProfessorId,
+            "Share grading rubric for methodology chapter",
+            DateTime.UtcNow.AddDays(5)));
+    }
+
     private async Task LoadMeetingsAsync()
     {
         _meetings.Clear();
         _responseModels.Clear();
+        _actionItems.Clear();
+        _newActionItemForms.Clear();
+        _busyMeetings.Clear();
 
         var participantId = _viewAsProfessor ? _sampleProfessorId : _sampleStudentId;
         var meetings = await Sender.Send(new University.Application.Meetings.Queries.GetParticipantMeetings.GetParticipantMeetingsQuery(participantId));
 
-        _meetings.AddRange(meetings.OrderByDescending(meeting => meeting.CreatedOn));
-
-        foreach (var meeting in _meetings.Where(m => m.Status == MeetingStatuses.Proposed))
+        foreach (var meeting in meetings.OrderByDescending(meeting => meeting.CreatedOn))
         {
-            _responseModels[meeting.Id] = new MeetingResponseModel();
+            _meetings.Add(meeting);
+
+            if (meeting.Status == MeetingStatuses.Proposed)
+            {
+                _responseModels[meeting.Id] = new MeetingResponseModel();
+            }
+
+            ApplyMeetingDtoActionItems(meeting);
+            _newActionItemForms[meeting.Id] = CreateActionItemFormModel.Create(meeting, _viewAsProfessor);
         }
+
+        await EnsureActionItemHubAsync();
     }
 
     private async Task HandleProposeAsync()
@@ -535,6 +730,408 @@
         }
     }
 
+    private List<ActionItemViewModel> GetActionItems(Guid meetingId)
+    {
+        if (!_actionItems.TryGetValue(meetingId, out var items))
+        {
+            items = new List<ActionItemViewModel>();
+            _actionItems[meetingId] = items;
+        }
+
+        return items;
+    }
+
+    private CreateActionItemFormModel GetNewActionItemForm(MeetingDto meeting)
+    {
+        if (!_newActionItemForms.TryGetValue(meeting.Id, out var form))
+        {
+            form = CreateActionItemFormModel.Create(meeting, _viewAsProfessor);
+            _newActionItemForms[meeting.Id] = form;
+        }
+
+        return form;
+    }
+
+    private void ApplyMeetingDtoActionItems(MeetingDto meeting)
+    {
+        var ordered = meeting.ActionItems
+            .OrderBy(item => item.Status == MeetingActionItemStatuses.Completed)
+            .ThenBy(item => item.DueOnUtc ?? DateTime.MaxValue)
+            .ThenBy(item => item.CreatedOnUtc)
+            .Select(CreateActionItemViewModel)
+            .ToList();
+
+        _actionItems[meeting.Id] = ordered;
+    }
+
+    private static ActionItemViewModel CreateActionItemViewModel(MeetingActionItemDto dto)
+    {
+        var viewModel = new ActionItemViewModel();
+        viewModel.Apply(dto);
+        return viewModel;
+    }
+
+    private void UpdateMeetingState(MeetingDto meeting)
+    {
+        var index = _meetings.FindIndex(existing => existing.Id == meeting.Id);
+        if (index >= 0)
+        {
+            _meetings[index] = meeting;
+        }
+        else
+        {
+            _meetings.Add(meeting);
+        }
+
+        ApplyMeetingDtoActionItems(meeting);
+
+        if (_newActionItemForms.TryGetValue(meeting.Id, out var form))
+        {
+            form.Reset(meeting, _viewAsProfessor);
+        }
+        else
+        {
+            _newActionItemForms[meeting.Id] = CreateActionItemFormModel.Create(meeting, _viewAsProfessor);
+        }
+    }
+
+    private async Task EnsureActionItemHubAsync()
+    {
+        try
+        {
+            if (_hubConnection is null)
+            {
+                _hubConnection = new HubConnectionBuilder()
+                    .WithUrl(NavigationManager.ToAbsoluteUri("/hubs/meeting-action-items"))
+                    .WithAutomaticReconnect()
+                    .Build();
+
+                _hubConnection.On<MeetingActionItemChangedMessage>("ActionItemAdded", message => HandleActionItemMessage(message));
+                _hubConnection.On<MeetingActionItemChangedMessage>("ActionItemUpdated", message => HandleActionItemMessage(message));
+                _hubConnection.On<MeetingActionItemChangedMessage>("ActionItemStatusChanged", message => HandleActionItemMessage(message));
+
+                _hubConnection.Closed += OnHubClosed;
+
+                await _hubConnection.StartAsync();
+            }
+
+            await UpdateHubGroupSubscriptionsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to initialize live updates: {ex.Message}";
+        }
+    }
+
+    private async Task UpdateHubGroupSubscriptionsAsync()
+    {
+        if (_hubConnection is null)
+        {
+            return;
+        }
+
+        var activeMeetings = _meetings.Select(meeting => meeting.Id).ToHashSet();
+
+        foreach (var joined in _joinedMeetingGroups.ToList())
+        {
+            if (!activeMeetings.Contains(joined))
+            {
+                await _hubConnection.SendAsync("LeaveMeeting", joined);
+                _joinedMeetingGroups.Remove(joined);
+            }
+        }
+
+        foreach (var meetingId in activeMeetings)
+        {
+            if (_joinedMeetingGroups.Add(meetingId))
+            {
+                await _hubConnection.SendAsync("JoinMeeting", meetingId);
+            }
+        }
+    }
+
+    private Task HandleActionItemMessage(MeetingActionItemChangedMessage message)
+    {
+        return InvokeAsync(() =>
+        {
+            ApplyActionItemMessage(message);
+            StateHasChanged();
+        });
+    }
+
+    private void ApplyActionItemMessage(MeetingActionItemChangedMessage message)
+    {
+        if (!_actionItems.TryGetValue(message.MeetingId, out var items))
+        {
+            items = new List<ActionItemViewModel>();
+            _actionItems[message.MeetingId] = items;
+        }
+
+        if (message.ChangeType == "ActionItemAdded")
+        {
+            items.RemoveAll(item => item.IsDraft);
+        }
+
+        var existing = items.FirstOrDefault(item => item.Id == message.ActionItem.Id);
+        if (existing is null)
+        {
+            items.Add(CreateActionItemViewModel(message.ActionItem));
+        }
+        else
+        {
+            existing.Apply(message.ActionItem);
+        }
+
+        SortActionItems(items);
+
+        var meetingIndex = _meetings.FindIndex(meeting => meeting.Id == message.MeetingId);
+        if (meetingIndex >= 0)
+        {
+            var meeting = _meetings[meetingIndex];
+            var updatedItems = meeting.ActionItems
+                .Where(item => item.Id != message.ActionItem.Id)
+                .Concat(new[] { message.ActionItem })
+                .ToArray();
+
+            _meetings[meetingIndex] = meeting with { ActionItems = updatedItems };
+        }
+    }
+
+    private Task OnHubClosed(Exception? ex)
+    {
+        _joinedMeetingGroups.Clear();
+        return Task.CompletedTask;
+    }
+
+    private async Task AddActionItemAsync(MeetingDto meeting)
+    {
+        var form = GetNewActionItemForm(meeting);
+        form.Error = null;
+
+        if (string.IsNullOrWhiteSpace(form.Description))
+        {
+            form.Error = "Add a description before creating an action item.";
+            return;
+        }
+
+        var dueOnUtc = ConvertInputToUtc(form.DueOnInput);
+        var actorId = GetCurrentActorId(meeting);
+        var ownerId = form.OwnerId == Guid.Empty ? actorId : form.OwnerId;
+
+        var list = GetActionItems(meeting.Id);
+        var placeholder = ActionItemViewModel.CreateDraft(actorId, ownerId, form.Description, dueOnUtc);
+        list.Add(placeholder);
+        SortActionItems(list);
+        _busyMeetings.Add(meeting.Id);
+
+        try
+        {
+            var command = new AddMeetingActionItemCommand(meeting.Id, actorId, ownerId, form.Description, dueOnUtc);
+            var updatedMeeting = await Sender.Send(command);
+            UpdateMeetingState(updatedMeeting);
+            form.Reset(updatedMeeting, _viewAsProfessor);
+            _successMessage = "Action item saved.";
+        }
+        catch (Exception ex)
+        {
+            list.Remove(placeholder);
+            form.Error = ex.Message;
+        }
+        finally
+        {
+            _busyMeetings.Remove(meeting.Id);
+            placeholder.IsSaving = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void UpdateNewActionItemDueDate(CreateActionItemFormModel form, string? value)
+    {
+        form.DueOnInput = value ?? string.Empty;
+    }
+
+    private void BeginActionItemEdit(ActionItemViewModel item)
+    {
+        if (item.IsDraft || item.IsSaving)
+        {
+            return;
+        }
+
+        item.Error = null;
+        item.IsEditing = true;
+        item.PendingDescription = item.Description;
+        item.PendingOwnerId = item.OwnerId;
+        item.PendingDueOnInput = item.DueOnUtc.HasValue
+            ? item.DueOnUtc.Value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")
+            : string.Empty;
+    }
+
+    private void CancelActionItemEdit(ActionItemViewModel item)
+    {
+        item.IsEditing = false;
+        item.Error = null;
+        item.PendingDescription = item.Description;
+        item.PendingOwnerId = item.OwnerId;
+        item.PendingDueOnInput = item.DueOnUtc.HasValue
+            ? item.DueOnUtc.Value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")
+            : string.Empty;
+    }
+
+    private async Task SaveActionItemEditsAsync(MeetingDto meeting, ActionItemViewModel item)
+    {
+        if (string.IsNullOrWhiteSpace(item.PendingDescription))
+        {
+            item.Error = "Description cannot be empty.";
+            return;
+        }
+
+        var dueOnUtc = ConvertInputToUtc(item.PendingDueOnInput);
+        var actorId = GetCurrentActorId(meeting);
+        var snapshot = item.CreateSnapshot();
+
+        item.ApplyPendingChanges(dueOnUtc);
+        item.IsEditing = false;
+        item.IsSaving = true;
+        item.Error = null;
+        _busyMeetings.Add(meeting.Id);
+
+        try
+        {
+            var command = new UpdateMeetingActionItemCommand(
+                meeting.Id,
+                item.Id,
+                actorId,
+                item.OwnerId,
+                item.Description,
+                dueOnUtc);
+
+            var updatedMeeting = await Sender.Send(command);
+            UpdateMeetingState(updatedMeeting);
+            _successMessage = "Action item updated.";
+        }
+        catch (Exception ex)
+        {
+            item.Restore(snapshot);
+            item.Error = ex.Message;
+            item.IsEditing = true;
+        }
+        finally
+        {
+            _busyMeetings.Remove(meeting.Id);
+            item.IsSaving = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void UpdateActionItemPendingDueDate(ActionItemViewModel item, string? value)
+    {
+        item.PendingDueOnInput = value ?? string.Empty;
+    }
+
+    private Task OnCompletionToggleAsync(MeetingDto meeting, ActionItemViewModel item, object? value)
+    {
+        if (value is bool boolean)
+        {
+            return ToggleActionItemCompletionAsync(meeting, item, boolean);
+        }
+
+        if (value is string stringValue && bool.TryParse(stringValue, out var parsed))
+        {
+            return ToggleActionItemCompletionAsync(meeting, item, parsed);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task ToggleActionItemCompletionAsync(MeetingDto meeting, ActionItemViewModel item, bool targetCompleted)
+    {
+        if (item.IsDraft || item.IsSaving || item.IsCompleted == targetCompleted)
+        {
+            return;
+        }
+
+        var snapshot = item.CreateSnapshot();
+        item.SetCompletion(targetCompleted);
+        item.IsSaving = true;
+        item.Error = null;
+        _busyMeetings.Add(meeting.Id);
+
+        try
+        {
+            var command = new SetMeetingActionItemCompletionCommand(meeting.Id, item.Id, GetCurrentActorId(meeting), targetCompleted);
+            var updatedMeeting = await Sender.Send(command);
+            UpdateMeetingState(updatedMeeting);
+        }
+        catch (Exception ex)
+        {
+            item.Restore(snapshot);
+            item.Error = ex.Message;
+        }
+        finally
+        {
+            _busyMeetings.Remove(meeting.Id);
+            item.IsSaving = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private Guid GetCurrentActorId(MeetingDto meeting)
+    {
+        return _viewAsProfessor ? meeting.SupervisorId : meeting.StudentId;
+    }
+
+    private static string GetParticipantDisplayName(Guid userId, MeetingDto meeting)
+    {
+        if (userId == meeting.StudentId)
+        {
+            return "Student";
+        }
+
+        if (userId == meeting.SupervisorId)
+        {
+            return "Professor";
+        }
+
+        return "Participant";
+    }
+
+    private static void SortActionItems(List<ActionItemViewModel> items)
+    {
+        items.Sort((left, right) =>
+        {
+            var completionComparison = left.IsCompleted.CompareTo(right.IsCompleted);
+            if (completionComparison != 0)
+            {
+                return completionComparison;
+            }
+
+            var leftDue = left.DueOnUtc ?? DateTime.MaxValue;
+            var rightDue = right.DueOnUtc ?? DateTime.MaxValue;
+            var dueComparison = leftDue.CompareTo(rightDue);
+            if (dueComparison != 0)
+            {
+                return dueComparison;
+            }
+
+            return left.CreatedOnUtc.CompareTo(right.CreatedOnUtc);
+        });
+    }
+
+    private DateTime? ConvertInputToUtc(string? value)
+    {
+        var parsed = ParseLocalDateTime(value);
+        return parsed.HasValue ? ToUtc(parsed.Value) : null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+            _hubConnection = null;
+        }
+    }
+
     private static DateTime ToUtc(DateTime dateTime)
     {
         return dateTime.Kind switch
@@ -599,6 +1196,186 @@
         }
 
         return null;
+    }
+
+    private sealed class ActionItemViewModel
+    {
+        public Guid Id { get; set; }
+
+        public Guid CreatedById { get; set; }
+
+        public Guid OwnerId { get; set; }
+
+        public string Description { get; set; } = string.Empty;
+
+        public string Status { get; set; } = MeetingActionItemStatuses.Pending;
+
+        public DateTime? DueOnUtc { get; set; }
+
+        public DateTime CreatedOnUtc { get; set; }
+
+        public DateTime LastUpdatedOnUtc { get; set; }
+
+        public DateTime? CompletedOnUtc { get; set; }
+
+        public bool IsEditing { get; set; }
+
+        public bool IsSaving { get; set; }
+
+        public bool IsDraft { get; set; }
+
+        public string? Error { get; set; }
+
+        public string PendingDescription { get; set; } = string.Empty;
+
+        public Guid PendingOwnerId { get; set; }
+
+        public string PendingDueOnInput { get; set; } = string.Empty;
+
+        public bool IsCompleted => Status == MeetingActionItemStatuses.Completed;
+
+        public string DueOnDisplay => DueOnUtc.HasValue
+            ? DueOnUtc.Value.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+            : "No due date";
+
+        public void Apply(MeetingActionItemDto dto)
+        {
+            Id = dto.Id;
+            CreatedById = dto.CreatedById;
+            OwnerId = dto.OwnerId;
+            Description = dto.Description;
+            Status = dto.Status;
+            DueOnUtc = dto.DueOnUtc;
+            CreatedOnUtc = dto.CreatedOnUtc;
+            LastUpdatedOnUtc = dto.LastUpdatedOnUtc;
+            CompletedOnUtc = dto.CompletedOnUtc;
+            PendingDescription = dto.Description;
+            PendingOwnerId = dto.OwnerId;
+            PendingDueOnInput = dto.DueOnUtc.HasValue
+                ? dto.DueOnUtc.Value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")
+                : string.Empty;
+            IsDraft = false;
+            IsSaving = false;
+        }
+
+        public ActionItemSnapshot CreateSnapshot()
+        {
+            return new ActionItemSnapshot(
+                Description,
+                OwnerId,
+                Status,
+                DueOnUtc,
+                CompletedOnUtc,
+                PendingDescription,
+                PendingOwnerId,
+                PendingDueOnInput);
+        }
+
+        public void Restore(ActionItemSnapshot snapshot)
+        {
+            Description = snapshot.Description;
+            OwnerId = snapshot.OwnerId;
+            Status = snapshot.Status;
+            DueOnUtc = snapshot.DueOnUtc;
+            CompletedOnUtc = snapshot.CompletedOnUtc;
+            PendingDescription = snapshot.PendingDescription;
+            PendingOwnerId = snapshot.PendingOwnerId;
+            PendingDueOnInput = snapshot.PendingDueOnInput;
+        }
+
+        public void ApplyPendingChanges(DateTime? dueOnUtc)
+        {
+            Description = PendingDescription;
+            OwnerId = PendingOwnerId;
+            DueOnUtc = dueOnUtc;
+            LastUpdatedOnUtc = DateTime.UtcNow;
+            PendingDueOnInput = dueOnUtc.HasValue
+                ? dueOnUtc.Value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")
+                : string.Empty;
+        }
+
+        public void SetCompletion(bool isCompleted)
+        {
+            if (isCompleted)
+            {
+                Status = MeetingActionItemStatuses.Completed;
+                CompletedOnUtc = DateTime.UtcNow;
+            }
+            else
+            {
+                Status = MeetingActionItemStatuses.Pending;
+                CompletedOnUtc = null;
+            }
+
+            LastUpdatedOnUtc = DateTime.UtcNow;
+            PendingDescription = Description;
+            PendingOwnerId = OwnerId;
+            PendingDueOnInput = DueOnUtc.HasValue
+                ? DueOnUtc.Value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")
+                : string.Empty;
+        }
+
+        public static ActionItemViewModel CreateDraft(Guid createdById, Guid ownerId, string description, DateTime? dueOnUtc)
+        {
+            var now = DateTime.UtcNow;
+
+            return new ActionItemViewModel
+            {
+                Id = Guid.NewGuid(),
+                CreatedById = createdById,
+                OwnerId = ownerId,
+                Description = description,
+                Status = MeetingActionItemStatuses.Pending,
+                DueOnUtc = dueOnUtc,
+                CreatedOnUtc = now,
+                LastUpdatedOnUtc = now,
+                CompletedOnUtc = null,
+                IsDraft = true,
+                IsSaving = true,
+                PendingDescription = description,
+                PendingOwnerId = ownerId,
+                PendingDueOnInput = dueOnUtc.HasValue
+                    ? dueOnUtc.Value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")
+                    : string.Empty,
+            };
+        }
+
+        internal readonly record struct ActionItemSnapshot(
+            string Description,
+            Guid OwnerId,
+            string Status,
+            DateTime? DueOnUtc,
+            DateTime? CompletedOnUtc,
+            string PendingDescription,
+            Guid PendingOwnerId,
+            string PendingDueOnInput);
+    }
+
+    private sealed class CreateActionItemFormModel
+    {
+        public Guid OwnerId { get; set; }
+
+        public string Description { get; set; } = string.Empty;
+
+        public string DueOnInput { get; set; } = string.Empty;
+
+        public string? Error { get; set; }
+
+        public static CreateActionItemFormModel Create(MeetingDto meeting, bool viewAsProfessor)
+        {
+            return new CreateActionItemFormModel
+            {
+                OwnerId = viewAsProfessor ? meeting.SupervisorId : meeting.StudentId,
+            };
+        }
+
+        public void Reset(MeetingDto meeting, bool viewAsProfessor)
+        {
+            Description = string.Empty;
+            DueOnInput = string.Empty;
+            Error = null;
+            OwnerId = viewAsProfessor ? meeting.SupervisorId : meeting.StudentId;
+        }
     }
 
     private sealed class ProposeMeetingFormModel

@@ -91,6 +91,12 @@ public sealed class UniversityDbContext : DbContext
             builder.Property(meeting => meeting.ConfirmedOn)
                 .HasPrecision(0);
 
+            builder.Navigation(meeting => meeting.Slots)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            builder.Navigation(meeting => meeting.ActionItems)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
             builder.OwnsMany(meeting => meeting.Slots, slotsBuilder =>
             {
                 slotsBuilder.WithOwner().HasForeignKey("MeetingId");
@@ -119,6 +125,36 @@ public sealed class UniversityDbContext : DbContext
                     .HasPrecision(0);
 
                 slotsBuilder.Property(slot => slot.RespondedOn)
+                    .HasPrecision(0);
+            });
+
+            builder.OwnsMany(meeting => meeting.ActionItems, itemsBuilder =>
+            {
+                itemsBuilder.WithOwner().HasForeignKey("MeetingId");
+                itemsBuilder.HasKey(item => item.Id);
+                itemsBuilder.Property(item => item.Id).ValueGeneratedNever();
+
+                itemsBuilder.HasIndex(item => item.OwnerId);
+                itemsBuilder.HasIndex(item => item.Status);
+
+                itemsBuilder.Property(item => item.Description)
+                    .HasMaxLength(2000)
+                    .IsRequired();
+
+                itemsBuilder.Property(item => item.Status)
+                    .HasMaxLength(50)
+                    .IsRequired();
+
+                itemsBuilder.Property(item => item.DueOnUtc)
+                    .HasPrecision(0);
+
+                itemsBuilder.Property(item => item.CreatedOnUtc)
+                    .HasPrecision(0);
+
+                itemsBuilder.Property(item => item.LastUpdatedOnUtc)
+                    .HasPrecision(0);
+
+                itemsBuilder.Property(item => item.CompletedOnUtc)
                     .HasPrecision(0);
             });
         });

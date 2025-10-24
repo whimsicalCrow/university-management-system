@@ -4,8 +4,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using University.Application.Meetings.Commands.AcceptMeetingSlot;
+using University.Application.Meetings.Commands.AddMeetingActionItem;
 using University.Application.Meetings.Commands.DeclineMeetingSlot;
 using University.Application.Meetings.Commands.ProposeMeeting;
+using University.Application.Meetings.Commands.SetMeetingActionItemCompletion;
+using University.Application.Meetings.Commands.UpdateMeetingActionItem;
+using University.Application.Meetings.Notifications;
 using University.Application.Meetings.Shared;
 using University.Domain.Aggregates.Meetings;
 using University.Domain.Aggregates.Theses;
@@ -117,6 +121,111 @@ public class MeetingCommandHandlerTests
         Assert.Equal(MeetingStatuses.Proposed, updated.Status);
         Assert.Equal(2, updated.Slots.Count);
         Assert.Contains(updated.Slots, slot => slot.Note == "Afternoon preferred");
+    }
+
+    [Fact]
+    public async Task AddMeetingActionItemCommandHandler_AppendsNewItem()
+    {
+        var thesis = CreateThesisProject();
+        await _thesisRepository.AddAsync(thesis);
+
+        var meeting = new Meeting(
+            thesis.Id,
+            thesis.StudentId,
+            thesis.SupervisorId,
+            "Sprint goals",
+            new[]
+            {
+                new MeetingSlot(thesis.StudentId, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(1).AddHours(1)),
+            });
+
+        await _meetingRepository.AddAsync(meeting, CancellationToken.None);
+
+        var broadcaster = new RecordingMeetingActionItemBroadcaster();
+        var handler = new AddMeetingActionItemCommandHandler(_meetingRepository, broadcaster);
+
+        var updated = await handler.Handle(
+            new AddMeetingActionItemCommand(meeting.Id, thesis.StudentId, thesis.SupervisorId, "Document API contract", DateTime.UtcNow.AddDays(2)),
+            CancellationToken.None);
+
+        Assert.Single(updated.ActionItems);
+        Assert.Equal("Document API contract", updated.ActionItems.Single().Description);
+        Assert.Equal(MeetingActionItemStatuses.Pending, updated.ActionItems.Single().Status);
+        Assert.Single(broadcaster.Invocations);
+        Assert.Equal("added", broadcaster.Invocations.Single().ChangeType);
+    }
+
+    [Fact]
+    public async Task UpdateMeetingActionItemCommandHandler_UpdatesItemDetails()
+    {
+        var thesis = CreateThesisProject();
+        await _thesisRepository.AddAsync(thesis);
+
+        var meeting = new Meeting(
+            thesis.Id,
+            thesis.StudentId,
+            thesis.SupervisorId,
+            "Sprint goals",
+            new[]
+            {
+                new MeetingSlot(thesis.StudentId, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(1).AddHours(1)),
+            });
+
+        var item = meeting.AddActionItem(thesis.StudentId, thesis.StudentId, "Initial note");
+
+        await _meetingRepository.AddAsync(meeting, CancellationToken.None);
+
+        var broadcaster = new RecordingMeetingActionItemBroadcaster();
+        var handler = new UpdateMeetingActionItemCommandHandler(_meetingRepository, broadcaster);
+
+        var updated = await handler.Handle(
+            new UpdateMeetingActionItemCommand(meeting.Id, item.Id, thesis.SupervisorId, thesis.SupervisorId, "Updated task", DateTime.UtcNow.AddDays(5)),
+            CancellationToken.None);
+
+        var dto = updated.ActionItems.Single();
+        Assert.Equal("Updated task", dto.Description);
+        Assert.Equal(thesis.SupervisorId, dto.OwnerId);
+        Assert.Equal(MeetingActionItemStatuses.Pending, dto.Status);
+        Assert.Single(broadcaster.Invocations);
+        Assert.Equal("updated", broadcaster.Invocations.Single().ChangeType);
+    }
+
+    [Fact]
+    public async Task SetMeetingActionItemCompletionCommandHandler_TogglesCompletion()
+    {
+        var thesis = CreateThesisProject();
+        await _thesisRepository.AddAsync(thesis);
+
+        var meeting = new Meeting(
+            thesis.Id,
+            thesis.StudentId,
+            thesis.SupervisorId,
+            "Sprint goals",
+            new[]
+            {
+                new MeetingSlot(thesis.StudentId, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(1).AddHours(1)),
+            });
+
+        var item = meeting.AddActionItem(thesis.SupervisorId, thesis.StudentId, "Prepare demo");
+
+        await _meetingRepository.AddAsync(meeting, CancellationToken.None);
+
+        var broadcaster = new RecordingMeetingActionItemBroadcaster();
+        var handler = new SetMeetingActionItemCompletionCommandHandler(_meetingRepository, broadcaster);
+
+        var completed = await handler.Handle(
+            new SetMeetingActionItemCompletionCommand(meeting.Id, item.Id, thesis.SupervisorId, true),
+            CancellationToken.None);
+
+    Assert.Equal(MeetingActionItemStatuses.Completed, completed.ActionItems.Single().Status);
+
+        var reopened = await handler.Handle(
+            new SetMeetingActionItemCompletionCommand(meeting.Id, item.Id, thesis.StudentId, false),
+            CancellationToken.None);
+
+        Assert.Equal(MeetingActionItemStatuses.Pending, reopened.ActionItems.Single().Status);
+        Assert.Equal(2, broadcaster.Invocations.Count);
+        Assert.Equal(new[] { "status", "status" }, broadcaster.Invocations.Select(invocation => invocation.ChangeType).ToArray());
     }
 
     [Fact]
@@ -329,6 +438,28 @@ public class MeetingCommandHandlerTests
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
+            return Task.CompletedTask;
+        }
+    }
+    private sealed class RecordingMeetingActionItemBroadcaster : IMeetingActionItemBroadcaster
+    {
+        public List<(string ChangeType, MeetingDto Meeting, MeetingActionItemDto ActionItem)> Invocations { get; } = new();
+
+        public Task ItemAddedAsync(MeetingDto meeting, MeetingActionItemDto actionItem, CancellationToken cancellationToken)
+        {
+            Invocations.Add(("added", meeting, actionItem));
+            return Task.CompletedTask;
+        }
+
+        public Task ItemUpdatedAsync(MeetingDto meeting, MeetingActionItemDto actionItem, CancellationToken cancellationToken)
+        {
+            Invocations.Add(("updated", meeting, actionItem));
+            return Task.CompletedTask;
+        }
+
+        public Task ItemStatusChangedAsync(MeetingDto meeting, MeetingActionItemDto actionItem, CancellationToken cancellationToken)
+        {
+            Invocations.Add(("status", meeting, actionItem));
             return Task.CompletedTask;
         }
     }
