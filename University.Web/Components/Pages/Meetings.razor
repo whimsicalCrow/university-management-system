@@ -1,30 +1,654 @@
 @page "/meetings"
+@inject ISender Sender
+@using System.Globalization
+@using System.ComponentModel.DataAnnotations
+@using System.Linq
+@using University.Application.Meetings.Commands.AcceptMeetingSlot
+@using University.Application.Meetings.Commands.DeclineMeetingSlot
+@using University.Application.Meetings.Commands.ProposeMeeting
+@using University.Application.Meetings.Queries.GetParticipantMeetings
+@using University.Application.ThesisProjects.Commands.CreateThesisProject
+@using University.Application.ThesisProjects.Queries.GetThesisProject
 
 <div class="container page-section">
     <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
         <div>
             <span class="highlight-tag mb-2"><span class="bi bi-calendar-event"></span> Meetings</span>
             <h1 class="section-heading mb-2">Meetings &amp; Scheduling</h1>
-            <p class="text-muted mb-0">Συντονίστε συναντήσεις, οριστικοποιήστε agendas και παρακολουθήστε τα follow-up tasks.</p>
+            <p class="text-muted mb-0">Coordinate agendas, propose availability, and capture confirmations.</p>
         </div>
-        <NavLink class="btn btn-primary mt-3 mt-lg-0" href="meetings">Νέα πρόσκληση</NavLink>
+        <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+            <span class="text-muted small">View as</span>
+            <div class="btn-group" role="group" aria-label="Perspective toggle">
+                <button type="button" class="btn btn-outline-primary @(!_viewAsProfessor ? "active" : string.Empty)" @onclick="() => SwitchPerspectiveAsync(false)" disabled="@_isBusy">Student</button>
+                <button type="button" class="btn btn-outline-primary @(_viewAsProfessor ? "active" : string.Empty)" @onclick="() => SwitchPerspectiveAsync(true)" disabled="@_isBusy">Professor</button>
+            </div>
+        </div>
     </div>
 
-    <section class="mb-5">
-        <h2 class="h4 fw-semibold mb-3">Upcoming Meetings</h2>
-        <div class="card info-card">
-            <div class="card-body">
-                <p class="text-muted mb-0">Calendared sessions and confirmation states will appear in this list.</p>
-            </div>
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @_errorMessage
         </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_successMessage))
+    {
+        <div class="alert alert-success" role="alert">
+            @_successMessage
+        </div>
+    }
+
+    <section class="mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 class="h4 fw-semibold mb-0">Upcoming Meetings</h2>
+            <span class="badge bg-light text-dark">@(_meetings.Count) meetings</span>
+        </div>
+
+        @if (_meetings.Count == 0)
+        {
+            <div class="card info-card">
+                <div class="card-body">
+                    <p class="text-muted mb-0">No meetings have been scheduled yet. Use the form below to propose the first session.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+                @foreach (var meeting in _meetings.OrderByDescending(m => m.CreatedOn))
+                {
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex flex-column flex-lg-row justify-content-between gap-2">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge @GetStatusBadgeClass(meeting.Status)">@meeting.Status</span>
+                                        <span class="text-muted small">Created @meeting.CreatedOn.ToLocalTime().ToString("dd MMM yyyy HH:mm")</span>
+                                    </div>
+                                    <h3 class="h5 fw-semibold mb-2">@meeting.Agenda</h3>
+                                    @if (!string.IsNullOrWhiteSpace(meeting.VideoConferenceUrl))
+                                    {
+                                        <p class="mb-2"><span class="bi bi-camera-video"></span> <a href="@meeting.VideoConferenceUrl" target="_blank" rel="noopener">Video conference link</a></p>
+                                    }
+                                    <p class="mb-0 text-muted">Slots proposed by student:</p>
+                                </div>
+                                <div class="text-lg-end">
+                                    <p class="mb-1"><span class="bi bi-person"></span> Student ID: @meeting.StudentId</p>
+                                    <p class="mb-0"><span class="bi bi-mortarboard"></span> Supervisor ID: @meeting.SupervisorId</p>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive mt-3">
+                                <table class="table align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Start</th>
+                                            <th scope="col">End</th>
+                                            <th scope="col">Status</th>
+                                            <th scope="col">Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var slot in meeting.Slots.OrderBy(slot => slot.StartOn))
+                                        {
+                                            <tr class="@(slot.Status == MeetingSlotStatuses.Accepted ? "table-success" : slot.Status == MeetingSlotStatuses.Declined ? "table-light" : string.Empty)">
+                                                <td>@slot.StartOn.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                                                <td>@slot.EndOn.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                                                <td><span class="badge @GetSlotBadgeClass(slot.Status)">@slot.Status</span></td>
+                                                <td>
+                                                    @if (!string.IsNullOrWhiteSpace(slot.Note))
+                                                    {
+                                                        <div>@slot.Note</div>
+                                                    }
+                                                    @if (!string.IsNullOrWhiteSpace(slot.ResponseNote))
+                                                    {
+                                                        <div class="text-muted small">Professor: @slot.ResponseNote</div>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @if (_viewAsProfessor && meeting.Status == MeetingStatuses.Proposed && meeting.Slots.Any(slot => slot.Status == MeetingSlotStatuses.Proposed))
+                            {
+                                var responseModel = GetResponseModel(meeting.Id);
+                                <div class="mt-4 border-top pt-3">
+                                    <h4 class="h6 fw-semibold mb-3">Professor Response</h4>
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label">Select slot to accept</label>
+                                            <select class="form-select" @bind="responseModel.SelectedSlotId">
+                                                <option value="">Choose a slot</option>
+                                                @foreach (var slot in meeting.Slots.Where(slot => slot.Status == MeetingSlotStatuses.Proposed))
+                                                {
+                                                    <option value="@slot.Id">@($"{slot.StartOn.ToLocalTime():dd MMM yyyy HH:mm} - {slot.EndOn.ToLocalTime():HH:mm}")</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label">Video conference link (optional)</label>
+                                            <input class="form-control" @bind="responseModel.VideoConferenceUrl" placeholder="https://..." />
+                                        </div>
+                                        <div class="col-12 col-md-4 text-md-end">
+                                            <button class="btn btn-success" @onclick="() => AcceptMeetingAsync(meeting.Id)" disabled="@_isBusy">
+                                                <span class="bi bi-check-circle me-1"></span> Accept Slot
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3 mt-3">
+                                        <div class="col-12">
+                                            <label class="form-label">Decline note (optional)</label>
+                                            <InputTextArea class="form-control" @bind-Value="responseModel.ResponseNote" rows="2" />
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label">Suggest alternative start</label>
+                                            <input type="datetime-local" class="form-control" value="@responseModel.AlternativeStartString" @onchange="eventArgs => UpdateAlternativeStart(responseModel, eventArgs.Value?.ToString())" />
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label">Suggest alternative end</label>
+                                            <input type="datetime-local" class="form-control" value="@responseModel.AlternativeEndString" @onchange="eventArgs => UpdateAlternativeEnd(responseModel, eventArgs.Value?.ToString())" />
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label">Alternative note</label>
+                                            <input class="form-control" @bind="responseModel.AlternativeNote" />
+                                        </div>
+                                        <div class="col-12 text-md-end">
+                                            <button class="btn btn-outline-secondary" @onclick="() => DeclineMeetingAsync(meeting.Id)" disabled="@_isBusy">
+                                                <span class="bi bi-x-circle me-1"></span> Decline &amp; Suggest
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
     </section>
 
-    <section>
-        <h2 class="h4 fw-semibold mb-3">Schedule a Meeting</h2>
-        <div class="card info-card">
-            <div class="card-body">
-                <p class="text-muted mb-0">A scheduling form with availability selection will be introduced in the next iterations.</p>
+    @if (!_viewAsProfessor)
+    {
+        <section>
+            <h2 class="h4 fw-semibold mb-3">Schedule a Meeting</h2>
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <EditForm Model="_proposeForm" OnValidSubmit="HandleProposeAsync">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label class="form-label">Agenda</label>
+                            <InputTextArea class="form-control" @bind-Value="_proposeForm.Agenda" rows="3" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Video conference link (optional)</label>
+                            <InputText class="form-control" @bind-Value="_proposeForm.VideoConferenceUrl" placeholder="https://teams.microsoft.com/..." />
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h3 class="h6 fw-semibold mb-0">Proposed slots</h3>
+                            <button type="button" class="btn btn-outline-primary btn-sm" @onclick="AddSlot" disabled="@_isBusy">
+                                <span class="bi bi-plus-lg"></span> Add slot
+                            </button>
+                        </div>
+
+                        @if (_slots.Count == 0)
+                        {
+                            <p class="text-muted small">Add at least one slot so your supervisor can pick a suitable time.</p>
+                        }
+                        else
+                        {
+                            <div class="d-flex flex-column gap-3">
+                                @foreach (var slot in _slots)
+                                {
+                                    <div class="row g-3 align-items-end meeting-slot-card">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label">Start</label>
+                                            <input type="datetime-local" class="form-control" value="@slot.StartOnString" @onchange="eventArgs => UpdateSlotStart(slot, eventArgs.Value?.ToString())" />
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label">End</label>
+                                            <input type="datetime-local" class="form-control" value="@slot.EndOnString" @onchange="eventArgs => UpdateSlotEnd(slot, eventArgs.Value?.ToString())" />
+                                        </div>
+                                        <div class="col-12 col-md-3">
+                                            <label class="form-label">Note (optional)</label>
+                                            <InputText class="form-control" @bind-Value="slot.Note" />
+                                        </div>
+                                        <div class="col-12 col-md-1 text-md-end">
+                                            <button type="button" class="btn btn-outline-danger" @onclick="() => RemoveSlot(slot)" disabled="@_isBusy || _slots.Count == 1">
+                                                <span class="bi bi-trash"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-primary" disabled="@(_isBusy || _slots.Count == 0)">
+                                <span class="bi bi-send me-1"></span> Submit proposal
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+    }
+    else
+    {
+        <section>
+            <div class="card info-card">
+                <div class="card-body">
+                    <p class="mb-0 text-muted">Switch to the student view to propose new availability. Professors can respond to any pending meeting directly from the cards above.</p>
+                </div>
+            </div>
+        </section>
+    }
 </div>
+
+@code {
+    private readonly Guid _sampleThesisId = Guid.Parse("0a6c2e9c-b0fb-4e8f-9f13-7c2313d97555");
+    private readonly Guid _sampleStudentId = Guid.Parse("b257828d-eca5-4c57-9515-2c1d0d1546ff");
+    private readonly Guid _sampleProfessorId = Guid.Parse("f5a15b68-b504-4ba9-aa3b-dad0893cb68c");
+
+    private readonly ProposeMeetingFormModel _proposeForm = new();
+    private readonly List<SlotInputModel> _slots = new();
+    private readonly Dictionary<Guid, MeetingResponseModel> _responseModels = new();
+    private readonly List<MeetingDto> _meetings = new();
+
+    private bool _viewAsProfessor;
+    private bool _isBusy;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InitializeAsync();
+    }
+
+    private async Task InitializeAsync()
+    {
+        try
+        {
+            _isBusy = true;
+            await EnsureSampleThesisAsync();
+            if (_slots.Count == 0)
+            {
+                AddSlot();
+            }
+            await LoadMeetingsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task EnsureSampleThesisAsync()
+    {
+        var thesis = await Sender.Send(new University.Application.ThesisProjects.Queries.GetThesisProject.GetThesisProjectQuery(_sampleThesisId));
+        if (thesis is null)
+        {
+            await Sender.Send(new University.Application.ThesisProjects.Commands.CreateThesisProject.CreateThesisProjectCommand(
+                _sampleStudentId,
+                _sampleProfessorId,
+                "Intelligent Energy Optimisation",
+                "Baseline thesis used for meeting scheduling demos."));
+        }
+    }
+
+    private async Task LoadMeetingsAsync()
+    {
+        _meetings.Clear();
+        _responseModels.Clear();
+
+        var participantId = _viewAsProfessor ? _sampleProfessorId : _sampleStudentId;
+        var meetings = await Sender.Send(new University.Application.Meetings.Queries.GetParticipantMeetings.GetParticipantMeetingsQuery(participantId));
+
+        _meetings.AddRange(meetings.OrderByDescending(meeting => meeting.CreatedOn));
+
+        foreach (var meeting in _meetings.Where(m => m.Status == MeetingStatuses.Proposed))
+        {
+            _responseModels[meeting.Id] = new MeetingResponseModel();
+        }
+    }
+
+    private async Task HandleProposeAsync()
+    {
+        try
+        {
+            _isBusy = true;
+            _errorMessage = null;
+            _successMessage = null;
+
+            if (_slots.Count == 0)
+            {
+                _errorMessage = "Add at least one slot before submitting.";
+                return;
+            }
+
+            var slotDtos = new List<ProposedMeetingSlotDto>();
+
+            foreach (var slot in _slots)
+            {
+                if (!slot.StartOn.HasValue || !slot.EndOn.HasValue)
+                {
+                    _errorMessage = "Provide start and end times for each slot.";
+                    return;
+                }
+
+                if (slot.StartOn.Value >= slot.EndOn.Value)
+                {
+                    _errorMessage = "Slot end time must be after the start time.";
+                    return;
+                }
+
+                slotDtos.Add(new ProposedMeetingSlotDto(
+                    ToUtc(slot.StartOn.Value),
+                    ToUtc(slot.EndOn.Value),
+                    slot.Note));
+            }
+
+            var command = new ProposeMeetingCommand(
+                _sampleThesisId,
+                _sampleStudentId,
+                _proposeForm.Agenda,
+                slotDtos,
+                string.IsNullOrWhiteSpace(_proposeForm.VideoConferenceUrl) ? null : _proposeForm.VideoConferenceUrl);
+
+            await Sender.Send(command);
+
+            _successMessage = "Meeting proposal submitted. Your supervisor will review the suggested slots.";
+            _proposeForm.Reset();
+            _slots.Clear();
+            AddSlot();
+            await LoadMeetingsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private void AddSlot()
+    {
+        var baseline = DateTime.Now.AddDays(1).Date.AddHours(10);
+        _slots.Add(new SlotInputModel
+        {
+            StartOn = baseline,
+            EndOn = baseline.AddHours(1),
+        });
+    }
+
+    private void RemoveSlot(SlotInputModel slot)
+    {
+        if (_slots.Count <= 1)
+        {
+            return;
+        }
+
+        _slots.Remove(slot);
+    }
+
+    private MeetingResponseModel GetResponseModel(Guid meetingId)
+    {
+        if (!_responseModels.TryGetValue(meetingId, out var model))
+        {
+            model = new MeetingResponseModel();
+            _responseModels[meetingId] = model;
+        }
+
+        return model;
+    }
+
+    private async Task AcceptMeetingAsync(Guid meetingId)
+    {
+        try
+        {
+            _isBusy = true;
+            _errorMessage = null;
+            _successMessage = null;
+
+            var response = GetResponseModel(meetingId);
+
+            if (response.SelectedSlotId is null)
+            {
+                _errorMessage = "Select the slot you want to accept.";
+                return;
+            }
+
+            await Sender.Send(new AcceptMeetingSlotCommand(meetingId, response.SelectedSlotId.Value, _sampleProfessorId, response.VideoConferenceUrl));
+
+            _successMessage = "Meeting confirmed and all other slots declined.";
+            await LoadMeetingsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task DeclineMeetingAsync(Guid meetingId)
+    {
+        try
+        {
+            _isBusy = true;
+            _errorMessage = null;
+            _successMessage = null;
+
+            var response = GetResponseModel(meetingId);
+
+            if (response.SelectedSlotId is null)
+            {
+                _errorMessage = "Choose the slot you want to decline.";
+                return;
+            }
+
+            ProposedMeetingSlotDto? alternative = null;
+
+            if (response.AlternativeStart.HasValue || response.AlternativeEnd.HasValue)
+            {
+                if (!response.AlternativeStart.HasValue || !response.AlternativeEnd.HasValue)
+                {
+                    _errorMessage = "Specify both start and end time for the alternative slot.";
+                    return;
+                }
+
+                if (response.AlternativeStart.Value >= response.AlternativeEnd.Value)
+                {
+                    _errorMessage = "Alternative end time must be after the start time.";
+                    return;
+                }
+
+                alternative = new ProposedMeetingSlotDto(
+                    ToUtc(response.AlternativeStart.Value),
+                    ToUtc(response.AlternativeEnd.Value),
+                    response.AlternativeNote);
+            }
+
+            await Sender.Send(new DeclineMeetingSlotCommand(
+                meetingId,
+                response.SelectedSlotId.Value,
+                _sampleProfessorId,
+                response.ResponseNote,
+                alternative));
+
+            _successMessage = alternative is null
+                ? "Slot declined. The student will review the note."
+                : "Slot declined and an alternative has been suggested.";
+
+            await LoadMeetingsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task SwitchPerspectiveAsync(bool professor)
+    {
+        if (_viewAsProfessor == professor)
+        {
+            return;
+        }
+
+        _viewAsProfessor = professor;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            _isBusy = true;
+            await LoadMeetingsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private static DateTime ToUtc(DateTime dateTime)
+    {
+        return dateTime.Kind switch
+        {
+            DateTimeKind.Utc => dateTime,
+            DateTimeKind.Local => dateTime.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(dateTime, DateTimeKind.Local).ToUniversalTime(),
+        };
+    }
+
+    private static string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            MeetingStatuses.Confirmed => "badge bg-success",
+            MeetingStatuses.Cancelled => "badge bg-secondary",
+            MeetingStatuses.Declined => "badge bg-warning text-dark",
+            _ => "badge bg-info text-dark",
+        };
+    }
+
+    private static string GetSlotBadgeClass(string status)
+    {
+        return status switch
+        {
+            MeetingSlotStatuses.Accepted => "badge bg-success",
+            MeetingSlotStatuses.Declined => "badge bg-secondary",
+            _ => "badge bg-light text-dark",
+        };
+    }
+
+    private void UpdateSlotStart(SlotInputModel slot, string? value)
+    {
+        slot.StartOn = ParseLocalDateTime(value);
+    }
+
+    private void UpdateSlotEnd(SlotInputModel slot, string? value)
+    {
+        slot.EndOn = ParseLocalDateTime(value);
+    }
+
+    private void UpdateAlternativeStart(MeetingResponseModel model, string? value)
+    {
+        model.AlternativeStart = ParseLocalDateTime(value);
+    }
+
+    private void UpdateAlternativeEnd(MeetingResponseModel model, string? value)
+    {
+        model.AlternativeEnd = ParseLocalDateTime(value);
+    }
+
+    private static DateTime? ParseLocalDateTime(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
+    private sealed class ProposeMeetingFormModel
+    {
+        [Required(ErrorMessage = "Agenda is required.")]
+        [StringLength(1024, ErrorMessage = "Agenda is too long.")]
+        public string Agenda { get; set; } = string.Empty;
+
+        [Url(ErrorMessage = "Use a valid URL.")]
+        [StringLength(512, ErrorMessage = "Link is too long.")]
+        public string? VideoConferenceUrl { get; set; }
+
+        public void Reset()
+        {
+            Agenda = string.Empty;
+            VideoConferenceUrl = null;
+        }
+    }
+
+    private sealed class SlotInputModel
+    {
+        public DateTime? StartOn { get; set; }
+
+        public DateTime? EndOn { get; set; }
+
+        public string? Note { get; set; }
+
+        public string StartOnString => StartOn.HasValue ? StartOn.Value.ToString("yyyy-MM-ddTHH:mm") : string.Empty;
+        public string EndOnString => EndOn.HasValue ? EndOn.Value.ToString("yyyy-MM-ddTHH:mm") : string.Empty;
+    }
+
+    private sealed class MeetingResponseModel
+    {
+        public Guid? SelectedSlotId { get; set; }
+
+        [Url(ErrorMessage = "Use a valid URL.")]
+        [StringLength(512, ErrorMessage = "Link is too long.")]
+        public string? VideoConferenceUrl { get; set; }
+
+        [StringLength(512, ErrorMessage = "Response note is too long.")]
+        public string? ResponseNote { get; set; }
+
+        public DateTime? AlternativeStart { get; set; }
+
+        public DateTime? AlternativeEnd { get; set; }
+
+        [StringLength(512, ErrorMessage = "Alternative note is too long.")]
+        public string? AlternativeNote { get; set; }
+
+        public string AlternativeStartString => AlternativeStart.HasValue ? AlternativeStart.Value.ToString("yyyy-MM-ddTHH:mm") : string.Empty;
+        public string AlternativeEndString => AlternativeEnd.HasValue ? AlternativeEnd.Value.ToString("yyyy-MM-ddTHH:mm") : string.Empty;
+    }
+}

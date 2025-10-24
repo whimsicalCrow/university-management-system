@@ -22,8 +22,9 @@ public static class InfrastructureServiceCollectionExtensions
 			options.UseSqlServer(connectionString);
 		});
 
-		services.AddScoped<IThesisProjectRepository, ThesisProjectRepository>();
-		services.AddScoped<INotificationRepository, NotificationRepository>();
+	services.AddScoped<IThesisProjectRepository, ThesisProjectRepository>();
+	services.AddScoped<IMeetingRepository, MeetingRepository>();
+	services.AddScoped<INotificationRepository, NotificationRepository>();
 
 		return services;
 		}
