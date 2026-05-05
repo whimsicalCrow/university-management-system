@@ -1,0 +1,747 @@
+@page "/thesis-topics"
+@using System.Globalization
+@inject UserSessionService Session
+
+<div class="container page-section">
+
+    @* ── Page header ──────────────────────────────────────────────────────── *@
+    <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
+        <div>
+            <span class="highlight-tag mb-2">
+                <span class="bi bi-lightbulb-fill"></span>
+                @(Session.Role == UserRole.Professor ? "Professor View" : "Student View")
+            </span>
+            <h1 class="section-heading mb-2">Thesis Topics</h1>
+            <p class="text-muted mb-0">
+                @if (Session.Role == UserRole.Professor)
+                {
+                    <span>Propose new topics, review pending submissions, and manage approval status.</span>
+                }
+                else
+                {
+                    <span>Browse available topics, express interest, or suggest a new topic for your thesis.</span>
+                }
+            </p>
+        </div>
+        <button class="btn btn-primary mt-3 mt-lg-0" @onclick="OpenProposalForm">
+            <span class="bi bi-plus-lg me-1"></span>
+            @(Session.Role == UserRole.Professor ? "Propose New Topic" : "Suggest a Topic")
+        </button>
+    </div>
+
+    @* ── Alert banners ──────────────────────────────────────────────────── *@
+    @if (!string.IsNullOrWhiteSpace(_successMessage))
+    {
+        <div class="alert alert-success alert-dismissible" role="alert">
+            <span class="bi bi-check-circle-fill me-2"></span>@_successMessage
+            <button type="button" class="btn-close" @onclick="() => _successMessage = null" aria-label="Close"></button>
+        </div>
+    }
+
+    @* ── Proposal form (inline collapsible) ────────────────────────────── *@
+    @if (_showForm)
+    {
+        <div class="card info-card mb-5">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="h5 fw-semibold mb-0">
+                        @(_editingId.HasValue ? "Edit Topic" : "Propose a Topic")
+                    </h2>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="CancelForm">
+                        <span class="bi bi-x-lg"></span> Cancel
+                    </button>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                        <input class="form-control @(_formErrors.ContainsKey("Title") ? "is-invalid" : "")"
+                               placeholder="e.g. Machine Learning for Smart Grid Optimisation"
+                               @bind="_form.Title" @bind:event="oninput" />
+                        @if (_formErrors.TryGetValue("Title", out var titleErr))
+                        {
+                            <div class="invalid-feedback">@titleErr</div>
+                        }
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control @(_formErrors.ContainsKey("Description") ? "is-invalid" : "")"
+                                  rows="4"
+                                  placeholder="Summarise the research area, objectives, and expected outcomes..."
+                                  @bind="_form.Description" @bind:event="oninput"></textarea>
+                        @if (_formErrors.TryGetValue("Description", out var descErr))
+                        {
+                            <div class="invalid-feedback">@descErr</div>
+                        }
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Research Area</label>
+                        <select class="form-select" @bind="_form.Area">
+                            <option value="">— Select area —</option>
+                            @foreach (var area in ResearchAreas)
+                            {
+                                <option value="@area">@area</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Supervising Professor <span class="text-danger">*</span></label>
+                        <input class="form-control @(_formErrors.ContainsKey("SupervisingProfessor") ? "is-invalid" : "")"
+                               placeholder="e.g. Prof. Papadopoulos"
+                               @bind="_form.SupervisingProfessor" @bind:event="oninput" />
+                        @if (_formErrors.TryGetValue("SupervisingProfessor", out var profErr))
+                        {
+                            <div class="invalid-feedback">@profErr</div>
+                        }
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Prerequisites</label>
+                        <input class="form-control"
+                               placeholder="e.g. Linear Algebra, Python"
+                               @bind="_form.Prerequisites" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Max Students</label>
+                        <input type="number" min="1" max="10" class="form-control" @bind="_form.MaxStudents" />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Tags</label>
+                        <p class="text-muted small mb-2">Select all that apply. These power the search filters.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var tag in AllTags)
+                            {
+                                var selected = _form.Tags.Contains(tag);
+                                <button type="button"
+                                        class="btn btn-sm @(selected ? "btn-primary" : "btn-outline-secondary") tag-toggle"
+                                        @onclick="() => ToggleFormTag(tag)">
+                                    @tag
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn btn-primary" @onclick="SubmitForm">
+                        <span class="bi bi-send me-1"></span>
+                        @(_editingId.HasValue ? "Save Changes" : "Submit for Approval")
+                    </button>
+                    @if (!_editingId.HasValue && Session.Role == UserRole.Professor)
+                    {
+                        <button class="btn btn-outline-secondary" @onclick="SaveAsDraft">
+                            <span class="bi bi-cloud-arrow-down me-1"></span> Save as Draft
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── Search & Filters ────────────────────────────────────────────────── *@
+    <div class="card info-card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label class="form-label small fw-semibold text-uppercase text-muted">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <span class="bi bi-search text-muted"></span>
+                        </span>
+                        <input class="form-control border-start-0"
+                               placeholder="Title, keyword, professor…"
+                               @bind="_searchText" @bind:event="oninput" />
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label small fw-semibold text-uppercase text-muted">Status</label>
+                    <select class="form-select" @bind="_filterStatus">
+                        <option value="">All statuses</option>
+                        @foreach (var s in TopicStatuses)
+                        {
+                            <option value="@s">@s</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label small fw-semibold text-uppercase text-muted">Area</label>
+                    <select class="form-select" @bind="_filterArea">
+                        <option value="">All areas</option>
+                        @foreach (var a in ResearchAreas)
+                        {
+                            <option value="@a">@a</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-lg-4 col-md-4 text-md-end">
+                    <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters">
+                        <span class="bi bi-x-circle me-1"></span> Clear
+                    </button>
+                </div>
+            </div>
+
+            @if (_activeTags.Count > 0)
+            {
+                <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+                    <span class="small text-muted fw-semibold me-1">Tag filters:</span>
+                    @foreach (var tag in _activeTags)
+                    {
+                        <button class="btn btn-sm btn-primary tag-toggle"
+                                @onclick="() => ToggleFilterTag(tag)">
+                            @tag <span class="bi bi-x ms-1"></span>
+                        </button>
+                    }
+                </div>
+            }
+
+            <div class="mt-3 d-flex flex-wrap gap-2">
+                @foreach (var tag in AllTags)
+                {
+                    var on = _activeTags.Contains(tag);
+                    <button class="btn btn-sm @(on ? "btn-primary" : "btn-outline-secondary") tag-toggle"
+                            @onclick="() => ToggleFilterTag(tag)">
+                        @tag
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── Results summary ─────────────────────────────────────────────────── *@
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <span class="text-muted small">
+            Showing <strong>@FilteredTopics.Count()</strong> of <strong>@_topics.Count</strong> topics
+        </span>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="small text-muted">Sort:</span>
+            <select class="form-select form-select-sm" style="width:auto;" @bind="_sortOrder">
+                <option value="Newest">Newest first</option>
+                <option value="Oldest">Oldest first</option>
+                <option value="Title">Title A–Z</option>
+                <option value="Status">Status</option>
+            </select>
+        </div>
+    </div>
+
+    @* ── Topic cards ─────────────────────────────────────────────────────── *@
+    @{
+        var displayed = FilteredTopics.ToList();
+    }
+
+    @if (displayed.Count == 0)
+    {
+        <div class="card info-card">
+            <div class="card-body text-center text-muted py-5">
+                <span class="bi bi-search mb-3" style="font-size:2.5rem; display:block; opacity:.4;"></span>
+                <p class="mb-0">No topics match your current filters.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-3">
+            @foreach (var topic in displayed)
+            {
+                <div class="card topic-card @(topic.Status == "Draft" ? "topic-draft" : "")">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+                            <div class="flex-fill">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <span class="@StatusBadgeClass(topic.Status)">@topic.Status</span>
+                                    @if (!string.IsNullOrWhiteSpace(topic.Area))
+                                    {
+                                        <span class="badge bg-light text-dark border">@topic.Area</span>
+                                    }
+                                    <span class="text-muted small ms-auto">
+                                        <span class="bi bi-person-circle me-1"></span>@topic.ProposedBy
+                                        &nbsp;·&nbsp;
+                                        @topic.ProposedOn.ToString("dd MMM yyyy")
+                                    </span>
+                                </div>
+
+                                <h3 class="h5 fw-semibold mb-2 topic-title">@topic.Title</h3>
+                                <p class="text-muted mb-3 topic-description">@topic.Description</p>
+
+                                @if (!string.IsNullOrWhiteSpace(topic.Prerequisites))
+                                {
+                                    <p class="mb-2 small">
+                                        <span class="bi bi-journal-check me-1 text-muted"></span>
+                                        <strong>Prerequisites:</strong> @topic.Prerequisites
+                                    </p>
+                                }
+
+                                <p class="mb-2 small text-muted">
+                                    <span class="bi bi-person-workspace me-1"></span>
+                                    <strong>Supervising Professor:</strong> @topic.SupervisingProfessor
+                                </p>
+
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    @foreach (var tag in topic.Tags)
+                                    {
+                                        <span class="badge topic-tag" @onclick="() => ToggleFilterTag(tag)" role="button" title="Filter by @tag">@tag</span>
+                                    }
+                                    <span class="ms-auto small text-muted">
+                                        <span class="bi bi-people me-1"></span>Max @topic.MaxStudents student@(topic.MaxStudents != 1 ? "s" : "")
+                                    </span>
+                                </div>
+                            </div>
+
+                                            @* ── Action buttons ───────────────────────────────────── *@
+                            <div class="d-flex flex-lg-column gap-2 flex-shrink-0 align-self-start">
+                                @if (Session.Role == UserRole.Professor)
+                                {
+                                    @if (topic.Status == "Pending Approval")
+                                    {
+                                        <button class="btn btn-success btn-sm" @onclick="() => ApproveTopic(topic.Id)">
+                                            <span class="bi bi-check-circle me-1"></span> Approve
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => RejectTopic(topic.Id)">
+                                            <span class="bi bi-x-circle me-1"></span> Reject
+                                        </button>
+                                    }
+                                    @if (topic.Status == "Draft" || topic.Status == "Approved")
+                                    {
+                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => EditTopic(topic)">
+                                            <span class="bi bi-pencil me-1"></span> Edit
+                                        </button>
+                                    }
+                                    @if (topic.Status == "Approved")
+                                    {
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => ArchiveTopic(topic.Id)">
+                                            <span class="bi bi-archive me-1"></span> Archive
+                                        </button>
+                                    }
+                                    @if (topic.Status == "Draft")
+                                    {
+                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => SubmitForApproval(topic.Id)">
+                                            <span class="bi bi-send me-1"></span> Submit
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteDraft(topic.Id)">
+                                            <span class="bi bi-trash me-1"></span> Delete
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    @* Student: can only express interest in Approved topics *@
+                                    @if (topic.Status == "Approved")
+                                    {
+                                        @if (_interestedTopicIds.Contains(topic.Id))
+                                        {
+                                            <button class="btn btn-success btn-sm" disabled>
+                                                <span class="bi bi-check2-circle me-1"></span> Interested
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-outline-success btn-sm" @onclick="() => DeclareInterest(topic.Id)">
+                                                <span class="bi bi-hand-thumbs-up me-1"></span> Express Interest
+                                            </button>
+                                        }
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    // ── Domain enumerations ──────────────────────────────────────────────────
+    private static readonly string[] TopicStatuses    = { "Draft", "Pending Approval", "Approved", "Rejected", "Archived" };
+    private static readonly string[] ResearchAreas    =
+    {
+        "Artificial Intelligence", "Computer Networks", "Cybersecurity",
+        "Embedded Systems", "Energy Systems", "Human-Computer Interaction",
+        "Internet of Things", "Signal Processing", "Software Engineering",
+        "Telecommunications",
+    };
+
+    private static readonly string[] AllTags =
+    {
+        "AI/ML", "Deep Learning", "NLP", "Computer Vision",
+        "5G", "IoT", "Edge Computing", "Cloud",
+        "Security", "Privacy", "Blockchain",
+        "Robotics", "Autonomous Systems", "Control Theory",
+        "Data Analysis", "Simulation", "Python", "C++", "Embedded C",
+        "Renewable Energy", "Smart Grid",
+    };
+
+    // ── Model ────────────────────────────────────────────────────────────────
+    private sealed class ThesisTopic
+    {
+        public Guid Id          { get; init; } = Guid.NewGuid();
+        public string Title       { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Status      { get; set; } = "Draft";
+        public string Area        { get; set; } = string.Empty;
+        public string SupervisingProfessor { get; set; } = string.Empty;
+        public string Prerequisites { get; set; } = string.Empty;
+        public int    MaxStudents { get; set; } = 1;
+        public List<string> Tags { get; set; } = new();
+        public string ProposedBy  { get; set; } = string.Empty;
+        public DateTime ProposedOn { get; set; } = DateTime.UtcNow;
+    }
+
+    private sealed class TopicFormModel
+    {
+        public string Title        { get; set; } = string.Empty;
+        public string Description  { get; set; } = string.Empty;
+        public string Area         { get; set; } = string.Empty;
+        public string SupervisingProfessor { get; set; } = string.Empty;
+        public string Prerequisites{ get; set; } = string.Empty;
+        public int    MaxStudents  { get; set; } = 1;
+        public HashSet<string> Tags { get; set; } = new();
+
+        public void Clear()
+        {
+            Title = Description = Area = SupervisingProfessor = Prerequisites = string.Empty;
+            MaxStudents = 1;
+            Tags.Clear();
+        }
+
+        public void Load(ThesisTopic t)
+        {
+            Title = t.Title; Description = t.Description; Area = t.Area;
+            SupervisingProfessor = t.SupervisingProfessor; Prerequisites = t.Prerequisites;
+            MaxStudents = t.MaxStudents; Tags = new HashSet<string>(t.Tags);
+        }
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────
+    private readonly List<ThesisTopic> _topics = new();
+    private readonly TopicFormModel _form = new();
+    private readonly Dictionary<string, string> _formErrors = new();
+    private readonly HashSet<string> _activeTags = new();
+
+    private bool _showForm;
+    private Guid? _editingId;
+    private readonly HashSet<Guid> _interestedTopicIds = new();
+    private string _searchText = string.Empty;
+    private string _filterStatus = string.Empty;
+    private string _filterArea = string.Empty;
+    private string _sortOrder = "Newest";
+    private string? _successMessage;
+
+    protected override void OnInitialized() => SeedSampleTopics();
+
+    // ── Seed ─────────────────────────────────────────────────────────────────
+    private void SeedSampleTopics()
+    {
+        _topics.Add(new ThesisTopic
+        {
+            Title = "Federated Learning for Privacy-Preserving Medical Data Analysis",
+            Description = "Investigate federated learning architectures that allow hospitals to collaboratively train ML models without sharing raw patient data. The work includes implementing a prototype, measuring communication overhead, and evaluating privacy guarantees against adversarial attacks.",
+            Status = "Pending Approval",
+            Area = "Artificial Intelligence",
+            SupervisingProfessor = "Prof. Λάμπρου",
+            Prerequisites = "Machine Learning, Python, Basic Statistics",
+            MaxStudents = 1,
+            Tags = new List<string> { "AI/ML", "Deep Learning", "Privacy", "Data Analysis" },
+            ProposedBy = "Prof. Λάμπρου",
+            ProposedOn = DateTime.UtcNow.AddDays(-3),
+        });
+
+        _topics.Add(new ThesisTopic
+        {
+            Title = "5G Network Slicing for Industrial IoT Applications",
+            Description = "Design and evaluate a network slicing framework tailored to latency-critical Industrial IoT use cases. The student will build an emulated testbed using open-source 5G tools and benchmark slice isolation under varying load conditions.",
+            Status = "Approved",
+            Area = "Telecommunications",
+            SupervisingProfessor = "Assoc. Prof. Σταθοπούλου",
+            Prerequisites = "Computer Networks, Linux",
+            MaxStudents = 2,
+            Tags = new List<string> { "5G", "IoT", "Edge Computing" },
+            ProposedBy = "Assoc. Prof. Σταθοπούλου",
+            ProposedOn = DateTime.UtcNow.AddDays(-14),
+        });
+
+        _topics.Add(new ThesisTopic
+        {
+            Title = "Smart Grid Demand Forecasting with Transformer Models",
+            Description = "Apply Transformer-based sequence models to short-term electricity demand forecasting for distribution grids. The thesis covers data preprocessing of public energy datasets, model design, and comparison against classical ARIMA baselines.",
+            Status = "Approved",
+            Area = "Energy Systems",
+            SupervisingProfessor = "Prof. Λάμπρου",
+            Prerequisites = "Linear Algebra, Python, Time-Series basics",
+            MaxStudents = 1,
+            Tags = new List<string> { "AI/ML", "Smart Grid", "Renewable Energy", "Data Analysis" },
+            ProposedBy = "Prof. Λάμπρου",
+            ProposedOn = DateTime.UtcNow.AddDays(-21),
+        });
+
+        _topics.Add(new ThesisTopic
+        {
+            Title = "Adversarial Robustness of Intrusion Detection Systems",
+            Description = "Evaluate how adversarial examples can bypass deep learning-based intrusion detection systems and propose hardening countermeasures. Experiments will use the CIC-IDS2017 dataset and a self-built neural network classifier.",
+            Status = "Pending Approval",
+            Area = "Cybersecurity",
+            SupervisingProfessor = "Assist. Prof. Παπαδόπουλος",
+            Prerequisites = "Machine Learning, Networking, Python",
+            MaxStudents = 1,
+            Tags = new List<string> { "AI/ML", "Security", "Deep Learning", "Data Analysis" },
+            ProposedBy = "Assist. Prof. Παπαδόπουλος",
+            ProposedOn = DateTime.UtcNow.AddDays(-1),
+        });
+
+        _topics.Add(new ThesisTopic
+        {
+            Title = "Bluetooth Mesh Firmware for Structural Health Monitoring",
+            Description = "Develop low-power firmware for a Bluetooth Mesh sensor network that monitors vibration and strain in civil structures. Deliverables include the firmware codebase, a gateway prototype, and performance benchmarks for multi-hop latency.",
+            Status = "Draft",
+            Area = "Embedded Systems",
+            SupervisingProfessor = "Lecturer Μανιάτη",
+            Prerequisites = "Embedded C, RTOS basics",
+            MaxStudents = 1,
+            Tags = new List<string> { "IoT", "Embedded C", "Simulation" },
+            ProposedBy = "Lecturer Μανιάτη",
+            ProposedOn = DateTime.UtcNow.AddDays(-2),
+        });
+
+        _topics.Add(new ThesisTopic
+        {
+            Title = "Explainability Techniques for Neural Network Classifiers",
+            Description = "Survey and implement state-of-the-art explainability methods (SHAP, LIME, Integrated Gradients) for image and tabular classifiers. The student will produce a comparative study on faithfulness and computational cost.",
+            Status = "Rejected",
+            Area = "Artificial Intelligence",
+            SupervisingProfessor = "Assoc. Prof. Σταθοπούλου",
+            Prerequisites = "Deep Learning, Python",
+            MaxStudents = 1,
+            Tags = new List<string> { "AI/ML", "Deep Learning", "Computer Vision" },
+            ProposedBy = "Assoc. Prof. Σταθοπούλου",
+            ProposedOn = DateTime.UtcNow.AddDays(-30),
+        });
+    }
+
+    // ── Filtering & sorting ──────────────────────────────────────────────────
+    private IEnumerable<ThesisTopic> FilteredTopics
+    {
+        get
+        {
+            IEnumerable<ThesisTopic> q = _topics;
+
+            @* Students don't see professor-internal Draft/Archived topics *@
+            if (Session.Role == UserRole.Student)
+                q = q.Where(t => t.Status != "Draft" && t.Status != "Archived");
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                var term = _searchText.Trim();
+                q = q.Where(t =>
+                    t.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    t.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    t.ProposedBy.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    t.Tags.Any(tag => tag.Contains(term, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_filterStatus))
+                q = q.Where(t => t.Status == _filterStatus);
+
+            if (!string.IsNullOrWhiteSpace(_filterArea))
+                q = q.Where(t => t.Area == _filterArea);
+
+            if (_activeTags.Count > 0)
+                q = q.Where(t => _activeTags.All(tag => t.Tags.Contains(tag)));
+
+            q = _sortOrder switch
+            {
+                "Oldest" => q.OrderBy(t => t.ProposedOn),
+                "Title"  => q.OrderBy(t => t.Title),
+                "Status" => q.OrderBy(t => t.Status),
+                _        => q.OrderByDescending(t => t.ProposedOn),
+            };
+
+            return q;
+        }
+    }
+
+    // ── Form actions ─────────────────────────────────────────────────────────
+    private void OpenProposalForm()
+    {
+        _form.Clear();
+        _editingId = null;
+        _formErrors.Clear();
+        _showForm = true;
+    }
+
+    private void CancelForm()
+    {
+        _showForm = false;
+        _editingId = null;
+        _formErrors.Clear();
+    }
+
+    private void EditTopic(ThesisTopic topic)
+    {
+        _form.Load(topic);
+        _editingId = topic.Id;
+        _formErrors.Clear();
+        _showForm = true;
+        _successMessage = null;
+    }
+
+    private bool ValidateForm()
+    {
+        _formErrors.Clear();
+        if (string.IsNullOrWhiteSpace(_form.Title))
+            _formErrors["Title"] = "Title is required.";
+        else if (_form.Title.Trim().Length < 10)
+            _formErrors["Title"] = "Title must be at least 10 characters.";
+
+        if (string.IsNullOrWhiteSpace(_form.Description))
+            _formErrors["Description"] = "Description is required.";
+        else if (_form.Description.Trim().Length < 30)
+            _formErrors["Description"] = "Description must be at least 30 characters.";
+
+        if (string.IsNullOrWhiteSpace(_form.SupervisingProfessor))
+            _formErrors["SupervisingProfessor"] = "Supervising professor is required.";
+
+        return _formErrors.Count == 0;
+    }
+
+    private void SubmitForm()
+    {
+        if (!ValidateForm()) return;
+
+        if (_editingId.HasValue)
+        {
+            var topic = _topics.FirstOrDefault(t => t.Id == _editingId.Value);
+            if (topic is not null)
+            {
+                topic.Title = _form.Title.Trim();
+                topic.Description = _form.Description.Trim();
+                topic.Area = _form.Area;
+                topic.SupervisingProfessor = _form.SupervisingProfessor.Trim();
+                topic.Prerequisites = _form.Prerequisites.Trim();
+                topic.MaxStudents = _form.MaxStudents;
+                topic.Tags = _form.Tags.ToList();
+            }
+            _successMessage = "Topic updated successfully.";
+        }
+        else
+        {
+            _topics.Insert(0, new ThesisTopic
+            {
+                Title = _form.Title.Trim(),
+                Description = _form.Description.Trim(),
+                Status = "Pending Approval",
+                Area = _form.Area,
+                SupervisingProfessor = _form.SupervisingProfessor.Trim(),
+                Prerequisites = _form.Prerequisites.Trim(),
+                MaxStudents = _form.MaxStudents,
+                Tags = _form.Tags.ToList(),
+                ProposedBy = Session.UserName ?? (Session.Role == UserRole.Student ? "Student" : "Prof."),
+                ProposedOn = DateTime.UtcNow,
+            });
+            _successMessage = "Topic submitted for approval.";
+        }
+
+        _showForm = false;
+        _editingId = null;
+    }
+
+    private void SaveAsDraft()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Title))
+        {
+            _formErrors["Title"] = "Title is required even for a draft.";
+            return;
+        }
+
+        _topics.Insert(0, new ThesisTopic
+        {
+            Title = _form.Title.Trim(),
+            Description = _form.Description.Trim(),
+            Status = "Draft",
+            Area = _form.Area,
+            SupervisingProfessor = _form.SupervisingProfessor.Trim(),
+            Prerequisites = _form.Prerequisites.Trim(),
+            MaxStudents = _form.MaxStudents,
+            Tags = _form.Tags.ToList(),
+            ProposedBy = Session.UserName ?? "Prof.",
+            ProposedOn = DateTime.UtcNow,
+        });
+
+        _successMessage = "Draft saved.";
+        _showForm = false;
+    }
+
+    // ── Status transitions ────────────────────────────────────────────────────
+    private void ApproveTopic(Guid id)
+    {
+        var t = _topics.FirstOrDefault(x => x.Id == id);
+        if (t is not null) { t.Status = "Approved"; _successMessage = $"'{t.Title}' approved."; }
+    }
+
+    private void RejectTopic(Guid id)
+    {
+        var t = _topics.FirstOrDefault(x => x.Id == id);
+        if (t is not null) { t.Status = "Rejected"; _successMessage = $"'{t.Title}' rejected."; }
+    }
+
+    private void ArchiveTopic(Guid id)
+    {
+        var t = _topics.FirstOrDefault(x => x.Id == id);
+        if (t is not null) { t.Status = "Archived"; _successMessage = $"'{t.Title}' archived."; }
+    }
+
+    private void SubmitForApproval(Guid id)
+    {
+        var t = _topics.FirstOrDefault(x => x.Id == id);
+        if (t is not null) { t.Status = "Pending Approval"; _successMessage = $"'{t.Title}' submitted for approval."; }
+    }
+
+    private void DeleteDraft(Guid id)
+    {
+        var t = _topics.FirstOrDefault(x => x.Id == id);
+        if (t is not null) { _topics.Remove(t); _successMessage = $"Draft '{t.Title}' deleted."; }
+    }
+
+    private void DeclareInterest(Guid id)
+    {
+        _interestedTopicIds.Add(id);
+        var t = _topics.FirstOrDefault(x => x.Id == id);
+        if (t is not null) _successMessage = $"Your interest in '{t.Title}' has been recorded.";
+    }
+
+    // ── Tag helpers ───────────────────────────────────────────────────────────
+    private void ToggleFormTag(string tag)
+    {
+        if (!_form.Tags.Remove(tag)) _form.Tags.Add(tag);
+    }
+
+    private void ToggleFilterTag(string tag)
+    {
+        if (!_activeTags.Remove(tag)) _activeTags.Add(tag);
+    }
+
+    private void ClearFilters()
+    {
+        _searchText = _filterStatus = _filterArea = string.Empty;
+        _activeTags.Clear();
+        _sortOrder = "Newest";
+    }
+
+    // ── Badge helpers ─────────────────────────────────────────────────────────
+    private static string StatusBadgeClass(string status) => status switch
+    {
+        "Approved"         => "badge bg-success",
+        "Pending Approval" => "badge bg-warning text-dark",
+        "Rejected"         => "badge bg-danger",
+        "Archived"         => "badge bg-secondary",
+        "Draft"            => "badge bg-light text-dark border",
+        _                  => "badge bg-secondary",
+    };
+
+}

@@ -600,3 +600,270 @@ a:focus {
             padding-left: 1.2rem;
         }
     }
+/* ── Thesis Topics page ────────────────────────────────────────────────────── */
+.topic-card {
+    border-radius: 16px;
+    border: none;
+    background: var(--eclass-card);
+    box-shadow: 0 8px 22px rgba(15, 65, 103, 0.08);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.topic-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(15, 65, 103, 0.13);
+}
+
+.topic-draft {
+    border-left: 4px solid var(--eclass-muted) !important;
+    opacity: 0.88;
+}
+
+.topic-title {
+    color: var(--eclass-blue-dark);
+}
+
+.topic-description {
+    font-size: 0.93rem;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.topic-tag {
+    background: rgba(15, 111, 170, 0.10);
+    color: var(--eclass-blue);
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.topic-tag:hover {
+    background: rgba(15, 111, 170, 0.22);
+}
+
+.tag-toggle {
+    border-radius: 999px !important;
+    font-size: 0.78rem;
+    padding: 0.25rem 0.8rem;
+    font-weight: 600;
+    transition: all 0.15s;
+}
+
+/* ── Login page ─────────────────────────────────────────────────────────────── */
+.login-body {
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0b4f75 0%, #0f6faa 55%, #4aa3df 100%);
+}
+
+.login-bg {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.login-page {
+    width: 100%;
+    max-width: 460px;
+}
+
+.login-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 24px 64px rgba(11, 79, 117, 0.28);
+    padding: 2.5rem 2.5rem 2rem;
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 2rem 1.25rem 1.5rem;
+    }
+}
+
+.login-brand {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-logo {
+    margin-bottom: 0.75rem;
+}
+
+.login-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--eclass-blue-dark);
+    margin: 0 0 0.25rem;
+}
+
+.login-subtitle {
+    font-size: 0.9rem;
+    color: var(--eclass-muted);
+    margin: 0;
+}
+
+.login-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--eclass-text);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.login-input {
+    border-radius: 10px;
+    border: 2px solid #e2eaf3;
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.login-input:focus {
+    border-color: var(--eclass-blue);
+    box-shadow: 0 0 0 3px rgba(15, 111, 170, 0.15);
+    outline: none;
+}
+
+/* Role selection cards */
+.role-card {
+    width: 100%;
+    border: 2px solid #e2eaf3;
+    border-radius: 14px;
+    background: #f8fbff;
+    padding: 2rem 0.75rem 1.6rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s, transform 0.14s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.role-card:hover {
+    border-color: var(--eclass-blue);
+    background: #edf5fb;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(15, 111, 170, 0.18);
+}
+
+.role-card:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 111, 170, 0.14);
+}
+
+.role-card__icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.role-card__icon--student {
+    background: rgba(84, 176, 112, 0.15);
+    color: #2f8a50;
+}
+
+.role-card__icon--professor {
+    background: rgba(15, 111, 170, 0.12);
+    color: var(--eclass-blue);
+}
+
+.role-card__label {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--eclass-text);
+}
+
+.role-card__sub {
+    font-size: 0.78rem;
+    color: var(--eclass-muted);
+    font-weight: 500;
+}
+
+/* Login submit button */
+.btn-login {
+    background: linear-gradient(90deg, var(--eclass-blue-dark) 0%, var(--eclass-blue) 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.75rem;
+    letter-spacing: 0.03em;
+    transition: opacity 0.18s, transform 0.14s, box-shadow 0.18s;
+    box-shadow: 0 6px 18px rgba(15, 111, 170, 0.28);
+}
+
+.btn-login:hover:not(:disabled) {
+    opacity: 0.92;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(15, 111, 170, 0.36);
+    color: #fff;
+}
+
+.btn-login:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ── Navbar user badge + logout ─────────────────────────────────────────────── */
+.nav-user-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem 0.3rem 0.35rem;
+}
+
+.nav-user-role {
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.55rem;
+    line-height: 1.4;
+}
+
+.nav-user-role--student {
+    background: rgba(84, 176, 112, 0.25);
+    color: #b8f5cb;
+}
+
+.nav-user-role--prof {
+    background: rgba(74, 163, 223, 0.28);
+    color: #c6eaff;
+}
+
+.nav-user-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nav-logout {
+    color: rgba(255, 255, 255, 0.7) !important;
+    padding: 0.25rem;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.nav-logout:hover {
+    color: #fff !important;
+}

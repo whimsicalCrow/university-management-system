@@ -4,16 +4,7 @@
 @using System.Net
 @using System.Text.RegularExpressions
 @using System.Threading
-@using FluentValidation
 @using Markdig
-@using MediatR
-@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Components.Routing
-@using University.Application.ThesisProjects.Commands.UpdateThesisProgress
-@using University.Application.ThesisProjects.Queries.GetThesisUpdates
-@using University.Domain.Aggregates.Theses
-
-@inject IMediator Mediator
 
 @implements IDisposable
 
@@ -207,6 +198,20 @@
     private const int AutosaveDelayMilliseconds = 2500;
     private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
+    // ── Local stub types ────────────────────────────────────────────────────
+    private static class ThesisUpdateStatuses
+    {
+        public const string Draft         = "Draft";
+        public const string PendingReview = "Pending Review";
+        public const string Accepted      = "Accepted";
+        public const string NeedsRevision = "Needs Revision";
+        public static IReadOnlyList<string> All { get; } = new[] { Draft, PendingReview, Accepted, NeedsRevision };
+    }
+
+    private sealed record ThesisUpdateTimelineDto(Guid Id, Guid AuthorId, string Status, string Note, DateTime OccurredOn, DateTime LastModifiedOn);
+
+    // ── State ────────────────────────────────────────────────────────────────
+    private readonly List<ThesisUpdateTimelineDto> _store = new();
     private readonly List<ThesisUpdateTimelineDto> timeline = new();
     private static readonly IReadOnlyList<string> AvailableStatuses = ThesisUpdateStatuses.All.ToArray();
 
@@ -234,7 +239,7 @@
     private bool IsSupervisorView => string.Equals(Role, "supervisor", StringComparison.OrdinalIgnoreCase);
 
     private IEnumerable<string> FilterableStatuses => IsSupervisorView
-        ? AvailableStatuses.Where(status => !status.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase))
+        ? AvailableStatuses.Where(s => !s.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase))
         : AvailableStatuses;
 
     protected override async Task OnParametersSetAsync()
@@ -248,32 +253,50 @@
         if (loadedThesisId != ThesisId)
         {
             loadedThesisId = ThesisId;
+            SeedSampleData();
             await LoadTimelineAsync();
         }
     }
 
-    private async Task LoadTimelineAsync()
+    private void SeedSampleData()
     {
-        if (MissingContext)
-        {
-            return;
-        }
+        if (_store.Count > 0) return;
 
-        var result = await Mediator.Send(new GetThesisUpdatesQuery
+        var authorId = AuthorId == Guid.Empty ? Guid.NewGuid() : AuthorId;
+        var now = DateTime.UtcNow;
+
+        _store.AddRange(new[]
         {
-            ThesisId = ThesisId,
-            IncludeDrafts = !IsSupervisorView,
-            Status = string.IsNullOrWhiteSpace(statusFilter) ? null : statusFilter,
+            new ThesisUpdateTimelineDto(Guid.NewGuid(), authorId, ThesisUpdateStatuses.Accepted,
+                "## Literature Review Complete\n\nCompleted the survey of 30+ papers. Key themes identified: distributed systems, consensus algorithms, and fault tolerance.",
+                now.AddDays(-14), now.AddDays(-14)),
+            new ThesisUpdateTimelineDto(Guid.NewGuid(), authorId, ThesisUpdateStatuses.NeedsRevision,
+                "## Methodology Draft\n\nFirst draft of the methodology chapter. Professor requested more detail on the validation approach and experimental setup.",
+                now.AddDays(-7), now.AddDays(-5)),
+            new ThesisUpdateTimelineDto(Guid.NewGuid(), authorId, ThesisUpdateStatuses.PendingReview,
+                "## Implementation Progress\n\nCore module implemented and all unit tests passing. Integration tests with the database layer still pending.",
+                now.AddDays(-2), now.AddDays(-2)),
         });
+    }
+
+    private Task LoadTimelineAsync()
+    {
+        IEnumerable<ThesisUpdateTimelineDto> filtered = _store;
+
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+            filtered = filtered.Where(u => u.Status.Equals(statusFilter, StringComparison.OrdinalIgnoreCase));
+
+        if (IsSupervisorView)
+            filtered = filtered.Where(u => !u.Status.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase));
 
         timeline.Clear();
-        timeline.AddRange(result);
+        timeline.AddRange(filtered.OrderByDescending(u => u.OccurredOn));
 
         if (!IsSupervisorView && draftUpdateId is null && string.IsNullOrWhiteSpace(editorContent))
         {
-            var draft = timeline.FirstOrDefault(update =>
-                update.AuthorId == AuthorId &&
-                update.Status.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase));
+            var draft = timeline.FirstOrDefault(u =>
+                u.AuthorId == AuthorId &&
+                u.Status.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase));
 
             if (draft is not null)
             {
@@ -283,7 +306,7 @@
             }
         }
 
-        await InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
     }
 
     private async Task OnFilterChanged(ChangeEventArgs args)
@@ -300,15 +323,9 @@
         ScheduleAutosave();
     }
 
-    private Task PublishAsync() => PersistAsync(
-        ThesisUpdateStatuses.PendingReview,
-        saveAsDraft: false,
-        isAutosave: false);
+    private Task PublishAsync() => PersistAsync(ThesisUpdateStatuses.PendingReview, saveAsDraft: false, isAutosave: false);
 
-    private Task SaveDraftAsync() => PersistAsync(
-        ThesisUpdateStatuses.Draft,
-        saveAsDraft: true,
-        isAutosave: false);
+    private Task SaveDraftAsync() => PersistAsync(ThesisUpdateStatuses.Draft, saveAsDraft: true, isAutosave: false);
 
     private async Task PersistAsync(string status, bool saveAsDraft, bool isAutosave)
     {
@@ -328,27 +345,25 @@
 
         try
         {
-            if (!isAutosave)
+            if (!isAutosave) isSaving = true;
+
+            var now = DateTime.UtcNow;
+
+            if (draftUpdateId.HasValue)
             {
-                isSaving = true;
+                var idx = _store.FindIndex(u => u.Id == draftUpdateId.Value);
+                if (idx >= 0)
+                    _store[idx] = _store[idx] with { Status = status, Note = editorContent, LastModifiedOn = now };
             }
-
-            var command = new UpdateThesisProgressCommand
+            else
             {
-                ThesisId = ThesisId,
-                AuthorId = AuthorId,
-                UpdateId = draftUpdateId,
-                Content = editorContent,
-                OccurredOn = DateTime.UtcNow,
-                Status = status,
-                SaveAsDraft = saveAsDraft,
-            };
-
-            var result = await Mediator.Send(command);
+                var newId = Guid.NewGuid();
+                _store.Add(new ThesisUpdateTimelineDto(newId, AuthorId, status, editorContent, now, now));
+                if (saveAsDraft) draftUpdateId = newId;
+            }
 
             if (saveAsDraft)
             {
-                draftUpdateId = result.UpdateId;
                 autosaveMessage = $"Αποθηκεύτηκε αυτόματα στις {DateTime.Now:HH:mm:ss}.";
             }
             else
@@ -360,12 +375,7 @@
             }
 
             validationMessage = null;
-
             await LoadTimelineAsync();
-        }
-        catch (ValidationException validationEx)
-        {
-            validationMessage = validationEx.Errors.FirstOrDefault()?.ErrorMessage ?? validationEx.Message;
         }
         catch (Exception ex)
         {
@@ -373,11 +383,7 @@
         }
         finally
         {
-            if (!isAutosave)
-            {
-                isSaving = false;
-            }
-
+            if (!isAutosave) isSaving = false;
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -386,12 +392,7 @@
     {
         autosaveCts?.Cancel();
         autosaveCts?.Dispose();
-
-        if (string.IsNullOrWhiteSpace(editorContent))
-        {
-            return;
-        }
-
+        if (string.IsNullOrWhiteSpace(editorContent)) return;
         autosaveCts = new CancellationTokenSource();
         _ = AutosaveAsync(autosaveCts.Token);
     }
