@@ -5,281 +5,29 @@
     <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
         <div>
             <span class="highlight-tag mb-2"><span class="bi bi-calendar-event"></span> Meetings</span>
-            <h1 class="section-heading mb-2">Professor Calendars & Slot Reservations</h1>
+            <h1 class="section-heading mb-2">Meetings Calendar</h1>
             <p class="text-muted mb-0">
                 @if (Session.Role == UserRole.Professor)
                 {
-                    <span>Open or close your available time slots, then send invites to students who reserve them.</span>
+                    <span>Share your availability and keep supervision meetings synchronized through Google Calendar.</span>
                 }
                 else
                 {
-                    <span>Select a professor calendar and reserve any open slot for your meeting request.</span>
+                    <span>Use the shared Google Calendar below to view and join thesis supervision meetings.</span>
                 }
             </p>
         </div>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(_successMessage))
-    {
-        <div class="alert alert-success" role="alert">@_successMessage</div>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(_errorMessage))
-    {
-        <div class="alert alert-danger" role="alert">@_errorMessage</div>
-    }
-
-    <div class="card info-card mb-4">
-        <div class="card-body">
-            @if (Session.Role == UserRole.Student)
-            {
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-5">
-                        <label class="form-label fw-semibold">Choose Professor</label>
-                        <select class="form-select" @bind="_selectedProfessor">
-                            @foreach (var p in _calendars.Select(c => c.ProfessorName))
-                            {
-                                <option value="@p">@p</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-7">
-                        <p class="text-muted small mb-0">Open = available to reserve. Closed = unavailable.</p>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <p class="mb-0 text-muted">You are managing your own calendar: <strong>@_selectedProfessor</strong></p>
-            }
-        </div>
-    </div>
-
     <div class="card info-card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle text-center mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="min-width: 100px;">Time</th>
-                            @foreach (var day in _weekDays)
-                            {
-                                <th style="min-width: 180px;">@day.ToString("ddd dd MMM")</th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var time in TimeSlots)
-                        {
-                            <tr>
-                                <th class="text-nowrap">@time</th>
-                                @foreach (var day in _weekDays)
-                                {
-                                    var slot = GetSlot(_selectedProfessor, day, time);
-                                    <td>
-                                        @if (Session.Role == UserRole.Professor)
-                                        {
-                                            @if (slot.ReservedByStudent is null)
-                                            {
-                                                <button class="btn btn-sm @(slot.IsOpen ? "btn-success" : "btn-outline-secondary")" @onclick="() => ToggleOpen(slot)">
-                                                    @(slot.IsOpen ? "Open" : "Closed")
-                                                </button>
-                                            }
-                                            else
-                                            {
-                                                <div class="small mb-2"><span class="badge bg-primary">Reserved</span> @slot.ReservedByStudent</div>
-                                                <div class="d-flex flex-column gap-1">
-                                                    <button class="btn btn-sm @(slot.IsOpen ? "btn-success" : "btn-outline-secondary")" @onclick="() => ToggleOpen(slot)">
-                                                        @(slot.IsOpen ? "Open" : "Closed")
-                                                    </button>
-                                                    @if (!slot.InviteSent)
-                                                    {
-                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => SendInvite(slot)">Send Invite</button>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge bg-info">Invite Sent</span>
-                                                    }
-                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => ClearReservation(slot)">Clear</button>
-                                                </div>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            @if (slot.ReservedByStudent is not null)
-                                            {
-                                                <span class="badge bg-secondary">Reserved</span>
-                                            }
-                                            else if (slot.IsOpen)
-                                            {
-                                                <button class="btn btn-sm btn-outline-success" @onclick="() => ReserveSlot(slot)">Reserve</button>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-light text-dark border">Closed</span>
-                                            }
-                                        }
-                                    </td>
-                                }
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+        <div class="card-body p-2 p-md-3">
+            <iframe
+                title="Thesis Meetings Google Calendar"
+                src="https://calendar.google.com/calendar/embed?height=650&wkst=2&ctz=Europe%2FAthens&showTabs=1&showCalendars=1&showPrint=0&showTitle=0&src=en.greek%23holiday%40group.v.calendar.google.com"
+                style="border: 0; width: 100%; min-height: 650px;"
+                frameborder="0"
+                scrolling="no">
+            </iframe>
         </div>
     </div>
 </div>
-
-@code {
-    private static readonly string[] TimeSlots = { "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00" };
-
-    private sealed class MeetingSlot
-    {
-        public DateTime Start { get; set; }
-        public bool IsOpen { get; set; }
-        public string? ReservedByStudent { get; set; }
-        public bool InviteSent { get; set; }
-    }
-
-    private sealed class ProfessorCalendar
-    {
-        public string ProfessorName { get; set; } = string.Empty;
-        public List<MeetingSlot> Slots { get; set; } = new();
-    }
-
-    private readonly List<ProfessorCalendar> _calendars = new();
-    private readonly List<DateTime> _weekDays = new();
-
-    private string _selectedProfessor = string.Empty;
-    private string? _successMessage;
-    private string? _errorMessage;
-
-    protected override void OnInitialized()
-    {
-        BuildWeekDays();
-        SeedCalendars();
-
-        if (Session.Role == UserRole.Professor)
-        {
-            _selectedProfessor = Session.UserName ?? "Professor";
-            if (_calendars.All(c => c.ProfessorName != _selectedProfessor))
-            {
-                _calendars.Add(new ProfessorCalendar
-                {
-                    ProfessorName = _selectedProfessor,
-                    Slots = BuildSlots(defaultOpen: false),
-                });
-            }
-        }
-        else
-        {
-            _selectedProfessor = _calendars.First().ProfessorName;
-        }
-    }
-
-    private void BuildWeekDays()
-    {
-        var today = DateTime.Today;
-        var offset = ((int)today.DayOfWeek + 6) % 7;
-        var monday = today.AddDays(-offset);
-        for (var i = 0; i < 5; i++)
-            _weekDays.Add(monday.AddDays(i));
-    }
-
-    private void SeedCalendars()
-    {
-        _calendars.Add(new ProfessorCalendar
-        {
-            ProfessorName = "Prof. Λάμπρου",
-            Slots = BuildSlots(defaultOpen: true),
-        });
-
-        _calendars.Add(new ProfessorCalendar
-        {
-            ProfessorName = "Assoc. Prof. Σταθοπούλου",
-            Slots = BuildSlots(defaultOpen: false),
-        });
-
-        _calendars.Add(new ProfessorCalendar
-        {
-            ProfessorName = "Assist. Prof. Παπαδόπουλος",
-            Slots = BuildSlots(defaultOpen: true),
-        });
-    }
-
-    private List<MeetingSlot> BuildSlots(bool defaultOpen)
-    {
-        var slots = new List<MeetingSlot>();
-
-        foreach (var day in _weekDays)
-        {
-            foreach (var time in TimeSlots)
-            {
-                var parts = time.Split(':');
-                var start = new DateTime(day.Year, day.Month, day.Day, int.Parse(parts[0]), int.Parse(parts[1]), 0);
-                slots.Add(new MeetingSlot
-                {
-                    Start = start,
-                    IsOpen = defaultOpen && (start.Hour == 10 || start.Hour == 12 || start.Hour == 15),
-                });
-            }
-        }
-
-        return slots;
-    }
-
-    private MeetingSlot GetSlot(string professor, DateTime day, string time)
-    {
-        var calendar = _calendars.First(c => c.ProfessorName == professor);
-        var parts = time.Split(':');
-        var start = new DateTime(day.Year, day.Month, day.Day, int.Parse(parts[0]), int.Parse(parts[1]), 0);
-        return calendar.Slots.First(s => s.Start == start);
-    }
-
-    private void ToggleOpen(MeetingSlot slot)
-    {
-        slot.IsOpen = !slot.IsOpen;
-        _successMessage = slot.IsOpen
-            ? $"Slot {slot.Start:ddd HH:mm} marked Open."
-            : $"Slot {slot.Start:ddd HH:mm} marked Closed.";
-        _errorMessage = null;
-    }
-
-    private void ReserveSlot(MeetingSlot slot)
-    {
-        if (!slot.IsOpen || slot.ReservedByStudent is not null)
-        {
-            _errorMessage = "This slot is no longer available.";
-            _successMessage = null;
-            return;
-        }
-
-        slot.ReservedByStudent = Session.UserName ?? "Student";
-        slot.IsOpen = false;
-        slot.InviteSent = false;
-        _successMessage = $"Meeting requested for {slot.Start:ddd dd MMM HH:mm}.";
-        _errorMessage = null;
-    }
-
-    private void SendInvite(MeetingSlot slot)
-    {
-        if (slot.ReservedByStudent is null)
-        {
-            _errorMessage = "No student has reserved this slot yet.";
-            _successMessage = null;
-            return;
-        }
-
-        slot.InviteSent = true;
-        _successMessage = $"Invite sent to {slot.ReservedByStudent} for {slot.Start:ddd dd MMM HH:mm}.";
-        _errorMessage = null;
-    }
-
-    private void ClearReservation(MeetingSlot slot)
-    {
-        slot.ReservedByStudent = null;
-        slot.InviteSent = false;
-        _successMessage = $"Reservation removed for {slot.Start:ddd dd MMM HH:mm}.";
-        _errorMessage = null;
-    }
-}

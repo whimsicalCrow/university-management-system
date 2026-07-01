@@ -309,9 +309,8 @@
         public const string Draft       = "Draft";
         public const string UnderReview = "Under review";
         public const string Approved    = "Approved";
-        public const string Rejected    = "Rejected";
-        public static IReadOnlyList<string> All { get; } = new[] { Draft, UnderReview, Approved, Rejected };
-        public static IReadOnlyList<string> Reviewable { get; } = new[] { UnderReview, Approved, Rejected };
+        public static IReadOnlyList<string> All { get; } = new[] { Draft, UnderReview, Approved };
+        public static IReadOnlyList<string> Reviewable { get; } = new[] { UnderReview, Approved };
     }
 
     private sealed record ProfessorCommentDto(Guid Id, string Author, string Message, DateTime CreatedOn);
@@ -406,7 +405,7 @@
                 {
                     new ProfessorCommentDto(Guid.NewGuid(), "Prof. Papadopoulos", "Solid literature synthesis. Proceed to implementation milestones.", now.AddDays(-13))
                 }),
-            new ThesisUpdateTimelineDto(Guid.NewGuid(), authorId, "Methodology Draft", ThesisUpdateStatuses.Rejected,
+            new ThesisUpdateTimelineDto(Guid.NewGuid(), authorId, "Methodology Draft", ThesisUpdateStatuses.UnderReview,
                 "## Methodology Draft\n\nFirst draft of the methodology chapter. Professor requested more detail on the validation approach and experimental setup.",
                 now.AddDays(-7), now.AddDays(-5), null, null,
                 new[]
@@ -743,7 +742,6 @@
     {
         var value when value.Equals(ThesisUpdateStatuses.UnderReview, StringComparison.OrdinalIgnoreCase) => "badge status-badge status-pending",
         var value when value.Equals(ThesisUpdateStatuses.Approved, StringComparison.OrdinalIgnoreCase) => "badge status-badge status-accepted",
-        var value when value.Equals(ThesisUpdateStatuses.Rejected, StringComparison.OrdinalIgnoreCase) => "badge status-badge status-revision",
         var value when value.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase) => "badge status-badge status-draft",
         _ => "badge status-badge",
     };

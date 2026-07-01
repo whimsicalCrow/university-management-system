@@ -2,7 +2,17 @@
 @inject UserSessionService Session
 @inject NavigationManager Nav
 
-@if (Session.Role == UserRole.Student)
+@if (!Session.IsAuthenticated)
+{
+    <div class="container page-section">
+        <div class="card info-card">
+            <div class="card-body">
+                <p class="mb-0 text-muted">Redirecting to login...</p>
+            </div>
+        </div>
+    </div>
+}
+else if (Session.Role == UserRole.Student)
 {
     <div class="container page-section">
         <div class="card info-card">
@@ -23,7 +33,7 @@ else
         </div>
         <div class="d-flex gap-2 mt-3 mt-lg-0">
             <NavLink class="btn btn-primary" href="thesis-topics">Manage Topics</NavLink>
-            <NavLink class="btn btn-outline-secondary" href="meetings">Open Meeting Slots</NavLink>
+            <NavLink class="btn btn-outline-secondary" href="meetings">Upcoming Meetings</NavLink>
         </div>
     </div>
 
@@ -43,7 +53,7 @@ else
         <div class="col-md-3 col-6">
             <div class="metric-card">
                 <div class="metric-value">9</div>
-                <div class="metric-label">Open Meeting Slots</div>
+                <div class="metric-label">Upcoming Meetings</div>
             </div>
         </div>
         <div class="col-md-3 col-6">
@@ -75,7 +85,6 @@ else
                         <NavLink class="btn btn-outline-primary text-start" href="thesis-topics">Thesis Topics</NavLink>
                         <NavLink class="btn btn-outline-primary text-start" href="updates">Thesis Updates</NavLink>
                         <NavLink class="btn btn-outline-primary text-start" href="meetings">Meetings Calendar</NavLink>
-                        <NavLink class="btn btn-outline-primary text-start" href="assignments">Supervisor Workflow</NavLink>
                     </div>
                 </div>
             </div>
@@ -87,7 +96,9 @@ else
 @code {
     protected override void OnInitialized()
     {
-        if (Session.Role == UserRole.Student)
+        if (!Session.IsAuthenticated)
+            Nav.NavigateTo("/login", forceLoad: false);
+        else if (Session.Role == UserRole.Student)
             Nav.NavigateTo("/dashboard", forceLoad: false);
     }
 }
