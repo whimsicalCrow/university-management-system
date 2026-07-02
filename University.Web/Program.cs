@@ -40,6 +40,7 @@ builder.Services.AddAuthorizationBuilder()
 builder.Services.AddMediatR(typeof(University.Application.Commands.LoginCommand));
 
 builder.Services.AddScoped<UserSessionService>();
+builder.Services.AddSingleton<IThesisInterestService, ThesisInterestService>();
 builder.Services.AddScoped<IThesisTopicAssignmentService, ThesisTopicAssignmentService>();
 
 builder.Services.AddRazorComponents()
