@@ -11,6 +11,7 @@
 @implements IDisposable
 @inject IJSRuntime JS
 @inject UserSessionService Session
+@inject IThesisArtifactStorageService ArtifactStorage
 
 <div class="container page-section">
     <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
@@ -216,7 +217,14 @@
                                     {
                                         <div class="small text-muted mb-2">
                                             <span class="bi bi-file-earmark-zip me-1"></span>
-                                            @item.AttachmentFileName
+                                            @if (item.ArtifactId.HasValue)
+                                            {
+                                                <a href="@($"/api/thesis-artifacts/{item.ArtifactId.Value}")" download="@item.AttachmentFileName">@item.AttachmentFileName</a>
+                                            }
+                                            else
+                                            {
+                                                @item.AttachmentFileName
+                                            }
                                             @if (item.AttachmentSizeBytes.HasValue)
                                             {
                                                 <span>(@FormatFileSize(item.AttachmentSizeBytes.Value))</span>
@@ -325,6 +333,7 @@
         DateTime LastModifiedOn,
         string? AttachmentFileName,
         long? AttachmentSizeBytes,
+        Guid? ArtifactId,
         IReadOnlyList<ProfessorCommentDto> ProfessorComments);
 
     // ── State ────────────────────────────────────────────────────────────────
@@ -345,6 +354,7 @@
     private ElementReference editorRef;
     private string? selectedAttachmentName;
     private long? selectedAttachmentSizeBytes;
+    private IBrowserFile? selectedAttachmentFile;
     private readonly Dictionary<Guid, string> professorCommentDrafts = new();
     private readonly Dictionary<Guid, string> professorStatusSelections = new();
 
@@ -401,13 +411,14 @@
             new ThesisUpdateTimelineDto(Guid.NewGuid(), authorId, "Literature Review Complete", ThesisUpdateStatuses.Approved,
                 "## Literature Review Complete\n\nCompleted the survey of 30+ papers. Key themes identified: distributed systems, consensus algorithms, and fault tolerance.",
                 now.AddDays(-14), now.AddDays(-14), "literature-review-pack.zip", 2_934_100,
+                null,
                 new[]
                 {
                     new ProfessorCommentDto(Guid.NewGuid(), "Prof. Papadopoulos", "Solid literature synthesis. Proceed to implementation milestones.", now.AddDays(-13))
                 }),
             new ThesisUpdateTimelineDto(Guid.NewGuid(), authorId, "Methodology Draft", ThesisUpdateStatuses.UnderReview,
                 "## Methodology Draft\n\nFirst draft of the methodology chapter. Professor requested more detail on the validation approach and experimental setup.",
-                now.AddDays(-7), now.AddDays(-5), null, null,
+                now.AddDays(-7), now.AddDays(-5), null, null, null,
                 new[]
                 {
                     new ProfessorCommentDto(Guid.NewGuid(), "Prof. Papadopoulos", "Please clarify evaluation criteria and include baseline comparison.", now.AddDays(-5))
@@ -415,6 +426,7 @@
             new ThesisUpdateTimelineDto(Guid.NewGuid(), authorId, "Implementation Progress", ThesisUpdateStatuses.UnderReview,
                 "## Implementation Progress\n\nCore module implemented and all unit tests passing. Integration tests with the database layer still pending.",
                 now.AddDays(-2), now.AddDays(-2), "sprint-3-deliverables.zip", 10_885_221,
+                null,
                 Array.Empty<ProfessorCommentDto>()),
         });
     }
@@ -500,6 +512,7 @@
         {
             selectedAttachmentName = null;
             selectedAttachmentSizeBytes = null;
+            selectedAttachmentFile = null;
             return;
         }
 
@@ -510,6 +523,7 @@
             validationMessage = "Επιτρέπονται μόνο αρχεία ZIP για την υποβολή ενημέρωσης.";
             selectedAttachmentName = null;
             selectedAttachmentSizeBytes = null;
+            selectedAttachmentFile = null;
             return;
         }
 
@@ -518,11 +532,13 @@
             validationMessage = $"Το αρχείο ZIP υπερβαίνει το όριο των {FormatFileSize(MaxAttachmentSizeBytes)}.";
             selectedAttachmentName = null;
             selectedAttachmentSizeBytes = null;
+            selectedAttachmentFile = null;
             return;
         }
 
         selectedAttachmentName = file.Name;
         selectedAttachmentSizeBytes = file.Size;
+        selectedAttachmentFile = file;
     }
 
     private Task PublishAsync() => PersistAsync(ThesisUpdateStatuses.UnderReview, saveAsDraft: false, isAutosave: false);
@@ -618,6 +634,18 @@
             if (!isAutosave) isSaving = true;
 
             var now = DateTime.UtcNow;
+            Guid? storedArtifactId = null;
+
+            if (selectedAttachmentFile is not null && !isAutosave)
+            {
+                await using var fileStream = selectedAttachmentFile.OpenReadStream(MaxAttachmentSizeBytes);
+                storedArtifactId = await ArtifactStorage.StoreAsync(
+                    Session.UserName,
+                    ResolvedThesisId,
+                    selectedAttachmentFile.Name,
+                    string.IsNullOrWhiteSpace(selectedAttachmentFile.ContentType) ? "application/zip" : selectedAttachmentFile.ContentType,
+                    fileStream);
+            }
 
             if (draftUpdateId.HasValue)
             {
@@ -631,13 +659,14 @@
                         LastModifiedOn = now,
                         AttachmentFileName = selectedAttachmentName,
                         AttachmentSizeBytes = selectedAttachmentSizeBytes,
+                        ArtifactId = storedArtifactId ?? _store[idx].ArtifactId,
                     };
             }
             else
             {
                 var newId = Guid.NewGuid();
                 _store.Add(new ThesisUpdateTimelineDto(newId, ResolvedAuthorId, updateTitle, status, editorContent, now, now,
-                    selectedAttachmentName, selectedAttachmentSizeBytes, Array.Empty<ProfessorCommentDto>()));
+                    selectedAttachmentName, selectedAttachmentSizeBytes, storedArtifactId, Array.Empty<ProfessorCommentDto>()));
                 if (saveAsDraft) draftUpdateId = newId;
             }
 
@@ -654,6 +683,7 @@
                 previewHtml = string.Empty;
                 selectedAttachmentName = null;
                 selectedAttachmentSizeBytes = null;
+                selectedAttachmentFile = null;
             }
 
             validationMessage = null;

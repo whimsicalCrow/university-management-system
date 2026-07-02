@@ -732,6 +732,31 @@ a:focus {
     outline: none;
 }
 
+/* File library */
+.library-metadata {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 1rem;
+}
+
+.library-metadata .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--eclass-muted);
+}
+
+.library-metadata .value {
+    font-weight: 600;
+    color: var(--eclass-blue-dark);
+}
+
+@media (max-width: 575.98px) {
+    .library-metadata {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Role selection cards */
 .role-card {
     width: 100%;

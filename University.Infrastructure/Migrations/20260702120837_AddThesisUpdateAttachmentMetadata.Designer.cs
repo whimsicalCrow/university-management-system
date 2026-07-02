@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using University.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using University.Infrastructure.Data;
 namespace University.Infrastructure.Migrations
 {
     [DbContext(typeof(UniversityDbContext))]
-    partial class UniversityDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702120837_AddThesisUpdateAttachmentMetadata")]
+    partial class AddThesisUpdateAttachmentMetadata
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,14 +55,14 @@ namespace University.Infrastructure.Migrations
                         new
                         {
                             Id = "1",
-                            ConcurrencyStamp = "d9338a47-42d6-41ca-b8d7-0e40a555b252",
+                            ConcurrencyStamp = "e5a294fd-abcb-4a1c-962c-8a61ed9214d4",
                             Name = "Professor",
                             NormalizedName = "PROFESSOR"
                         },
                         new
                         {
                             Id = "2",
-                            ConcurrencyStamp = "81a2a4ef-b0b0-40bb-b771-2e8c519a6c90",
+                            ConcurrencyStamp = "bfc55cfe-7ccf-44d8-9250-d883c9da8d0c",
                             Name = "Student",
                             NormalizedName = "STUDENT"
                         });
@@ -959,53 +962,6 @@ namespace University.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("University.Domain.Entities.ThesisArtifact", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid>("ArtifactId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("Data")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("FileSizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("StudentId")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ThesisId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("UploadedOn")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ArtifactId")
-                        .IsUnique();
-
-                    b.HasIndex("StudentId");
-
-                    b.HasIndex("ThesisId");
-
-                    b.ToTable("ThesisArtifacts");
-                });
-
             modelBuilder.Entity("University.Domain.Entities.ThesisTopicAssignment", b =>
                 {
                     b.Property<int>("Id")
@@ -1177,17 +1133,6 @@ namespace University.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Supervisor");
-                });
-
-            modelBuilder.Entity("University.Domain.Entities.ThesisArtifact", b =>
-                {
-                    b.HasOne("University.Domain.Entities.Student", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("University.Domain.Entities.ThesisTopicAssignment", b =>

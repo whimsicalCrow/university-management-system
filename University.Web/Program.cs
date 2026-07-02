@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using MediatR;
@@ -42,6 +43,8 @@ builder.Services.AddMediatR(typeof(University.Application.Commands.LoginCommand)
 builder.Services.AddScoped<UserSessionService>();
 builder.Services.AddSingleton<IThesisInterestService, ThesisInterestService>();
 builder.Services.AddScoped<IThesisTopicAssignmentService, ThesisTopicAssignmentService>();
+builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
+builder.Services.AddScoped<IThesisArtifactStorageService, ThesisArtifactStorageService>();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -79,6 +82,62 @@ app.UseAuthorization();
 app.MapRazorComponents<University.Web.Components.App>()
     .AddInteractiveServerRenderMode();
 
+app.MapPost("/api/auth/login",
+    async (LoginApiRequest request, SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager) =>
+    {
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return Results.BadRequest(new LoginApiResponse(false, null, "Email and password are required."));
+        }
+
+        var user = await userManager.FindByEmailAsync(request.Email.Trim());
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var signInResult = await signInManager.PasswordSignInAsync(user, request.Password, isPersistent: false, lockoutOnFailure: true);
+        if (!signInResult.Succeeded)
+        {
+            return Results.Unauthorized();
+        }
+
+        var roles = await userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault() ?? "Unknown";
+
+        return Results.Ok(new LoginApiResponse(true, role, null));
+    })
+    .DisableAntiforgery();
+
+app.MapGet("/auth/logout",
+    async (SignInManager<IdentityUser> signInManager) =>
+    {
+        await signInManager.SignOutAsync();
+        return Results.Redirect("/login");
+    });
+
+app.MapGet("/api/thesis-artifacts/{artifactId:guid}",
+    async (Guid artifactId, ClaimsPrincipal user, IThesisArtifactStorageService artifactStorage, CancellationToken cancellationToken) =>
+    {
+        var identityUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(identityUserId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var artifact = await artifactStorage.GetOwnedByArtifactIdAsync(identityUserId, artifactId, cancellationToken);
+        if (artifact is null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.File(
+            fileContents: artifact.Data,
+            contentType: artifact.ContentType,
+            fileDownloadName: artifact.FileName);
+    })
+    .RequireAuthorization("StudentOnly");
+
 app.Run();
 
 static async Task EnsureDemoUserPasswordsAsync(UserManager<IdentityUser> userManager)
@@ -109,3 +168,6 @@ static async Task EnsurePasswordHashAsync(UserManager<IdentityUser> userManager,
     user.PasswordHash = userManager.PasswordHasher.HashPassword(user, password);
     await userManager.UpdateAsync(user);
 }
+
+sealed record LoginApiRequest(string Email, string Password);
+sealed record LoginApiResponse(bool Success, string? Role, string? Message);

@@ -25,6 +25,16 @@ public class ThesisUpdate : BaseEntity
     public DateTime SubmittedAt { get; internal set; }
 
     /// <summary>
+    /// Gets the optional attachment file name for this update.
+    /// </summary>
+    public string? AttachmentFileName { get; internal set; }
+
+    /// <summary>
+    /// Gets the optional attachment file size in bytes.
+    /// </summary>
+    public long? AttachmentSizeBytes { get; internal set; }
+
+    /// <summary>
     /// Gets the current status of the update (Draft, Submitted, or Reviewed).
     /// </summary>
     public UpdateStatus Status { get; internal set; }
@@ -88,5 +98,22 @@ public class ThesisUpdate : BaseEntity
             throw new DomainException($"Update must be in Submitted status to mark as reviewed. Current status: {Status}");
 
         Status = UpdateStatus.Reviewed;
+    }
+
+    /// <summary>
+    /// Attaches metadata for a submitted artifact.
+    /// </summary>
+    /// <param name="fileName">Attachment filename.</param>
+    /// <param name="sizeBytes">Attachment size in bytes.</param>
+    public void AttachFileMetadata(string fileName, long sizeBytes)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            throw new DomainException("Attachment filename cannot be null or empty.");
+
+        if (sizeBytes <= 0)
+            throw new DomainException("Attachment size must be greater than zero.");
+
+        AttachmentFileName = fileName.Trim();
+        AttachmentSizeBytes = sizeBytes;
     }
 }

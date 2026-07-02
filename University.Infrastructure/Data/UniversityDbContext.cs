@@ -52,6 +52,11 @@ public class UniversityDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ThesisTopicAssignment> ThesisTopicAssignments { get; set; } = null!;
 
     /// <summary>
+    /// Gets or sets persisted thesis artifact binaries.
+    /// </summary>
+    public DbSet<ThesisArtifact> ThesisArtifacts { get; set; } = null!;
+
+    /// <summary>
     /// Configures the model relationships and constraints using Fluent API.
     /// Ensures proper foreign key mappings, cascade delete rules, and index configuration.
     /// </summary>
@@ -113,6 +118,12 @@ public class UniversityDbContext : IdentityDbContext<IdentityUser>
             .HasForeignKey(t => t.ProfessorId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<ThesisArtifact>()
+            .HasOne(a => a.Student)
+            .WithMany()
+            .HasForeignKey(a => a.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // Configure Feedback entity relationships (all configured above)
 
         // Configure indexes for performance
@@ -146,6 +157,16 @@ public class UniversityDbContext : IdentityDbContext<IdentityUser>
 
         modelBuilder.Entity<ThesisTopicAssignment>()
             .HasIndex(t => t.ProfessorId);
+
+        modelBuilder.Entity<ThesisArtifact>()
+            .HasIndex(a => a.ArtifactId)
+            .IsUnique();
+
+        modelBuilder.Entity<ThesisArtifact>()
+            .HasIndex(a => a.StudentId);
+
+        modelBuilder.Entity<ThesisArtifact>()
+            .HasIndex(a => a.ThesisId);
 
         // Seed Identity Roles
         modelBuilder.Entity<IdentityRole>().HasData(

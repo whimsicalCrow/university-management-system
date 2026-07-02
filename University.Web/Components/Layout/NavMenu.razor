@@ -21,6 +21,9 @@
                     <li class="nav-item">
                         <NavLink class="nav-link" href="thesis-topics">Thesis Topics</NavLink>
                     </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="file-library">File Library</NavLink>
+                    </li>
                 }
 
                 @* ── Shared links ── *@
@@ -74,7 +77,7 @@
     private void Logout()
     {
         Session.Logout();
-        Nav.NavigateTo("/login");
+        Nav.NavigateTo("/auth/logout", forceLoad: true);
     }
 
     public void Dispose()
