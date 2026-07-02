@@ -1,5 +1,6 @@
 @page "/thesis-topics"
 @inject UserSessionService Session
+@inject IThesisInterestService InterestService
 @inject IThesisTopicAssignmentService TopicAssignmentService
 
 <div class="container page-section">
@@ -17,7 +18,7 @@
                 }
                 else
                 {
-                    <span>You can browse public topics and access only the ongoing topic assigned to you.</span>
+                    <span>You can browse public topics, express interest, and access only the ongoing topic assigned to you.</span>
                 }
             </p>
         </div>
@@ -251,6 +252,34 @@
                                     </p>
                                 }
 
+                                @if (Session.Role == UserRole.Professor && IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Open)
+                                {
+                                    <div class="mt-3">
+                                        <p class="mb-2 small text-muted fw-semibold text-uppercase">Interested students</p>
+                                        @if (topic.InterestedStudents.Count == 0)
+                                        {
+                                            <p class="mb-0 small text-muted">No student interest yet.</p>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex flex-column gap-2">
+                                                @foreach (var interest in topic.InterestedStudents.OrderByDescending(i => i.ExpressedOn))
+                                                {
+                                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                                        <span class="badge bg-light text-dark border">@interest.StudentEmail</span>
+                                                        <span class="small text-muted">@interest.ExpressedOn.ToString("dd MMM yyyy HH:mm")</span>
+                                                        <button class="btn btn-outline-primary btn-sm"
+                                                                @onclick="() => AssignInterestedStudentAsync(topic.Id, interest.StudentEmail)"
+                                                                disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                                            <span class="bi bi-person-check me-1"></span> Assign Student
+                                                        </button>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
                                 <span class="small text-muted">
                                     <span class="bi bi-people me-1"></span>Max @topic.MaxStudents student@(topic.MaxStudents != 1 ? "s" : "")
                                 </span>
@@ -285,8 +314,14 @@
                                 {
                                     @if (topic.Status == TopicStatus.Open)
                                     {
-                                        <button class="btn btn-outline-success btn-sm" @onclick="() => AssignToCurrentStudentAsync(topic.Id)" disabled="@_assigningTopicIds.Contains(topic.Id)">
-                                            <span class="bi bi-check2-circle me-1"></span> Assign To Me
+                                        <button class="btn btn-outline-success btn-sm" @onclick="() => ExpressInterestAsync(topic.Id)" disabled="@_topicActionInProgressIds.Contains(topic.Id) || HasCurrentStudentExpressedInterest(topic)">
+                                            <span class="bi bi-heart me-1"></span> Express Interest
+                                        </button>
+                                    }
+                                    @if (topic.Status == TopicStatus.Open && HasCurrentStudentExpressedInterest(topic))
+                                    {
+                                        <button class="btn btn-success btn-sm" disabled>
+                                            <span class="bi bi-heart-fill me-1"></span> Interest Registered
                                         </button>
                                     }
                                     @if (topic.Status == TopicStatus.Ongoing && IsCurrentStudentAssigned(topic))
@@ -357,7 +392,10 @@
         public string ProposedBy { get; set; } = string.Empty;
         public DateTime ProposedOn { get; set; } = DateTime.UtcNow;
         public string? AssignedStudentAccount { get; set; }
+        public List<TopicInterestDto> InterestedStudents { get; } = new();
     }
+
+    private sealed record TopicInterestDto(string StudentEmail, string ProfessorEmail, DateTime ExpressedOn);
 
     private sealed class TopicFormModel
     {
@@ -388,7 +426,7 @@
     private readonly List<ThesisTopic> _topics = new();
     private readonly TopicFormModel _form = new();
     private readonly Dictionary<string, string> _formErrors = new();
-    private readonly HashSet<Guid> _assigningTopicIds = new();
+    private readonly HashSet<Guid> _topicActionInProgressIds = new();
 
     private bool _showForm;
     private Guid? _editingId;
@@ -404,7 +442,7 @@
     protected override async Task OnInitializedAsync()
     {
         SeedSampleTopics();
-        await ApplyPersistedAssignmentsAsync();
+        await ApplyPersistedStateAsync();
     }
 
     private void SeedSampleTopics()
@@ -475,12 +513,24 @@
         });
     }
 
-    private async Task ApplyPersistedAssignmentsAsync()
+    private async Task ApplyPersistedStateAsync()
     {
-        var persisted = await TopicAssignmentService.GetPersistedAssignmentsAsync();
+        var persistedAssignments = await TopicAssignmentService.GetPersistedAssignmentsAsync();
+        var persistedInterests = await InterestService.GetInterestsAsync();
+
         foreach (var topic in _topics)
         {
-            if (!persisted.TryGetValue(topic.Id, out var assignment))
+            topic.InterestedStudents.Clear();
+
+            foreach (var interest in persistedInterests.Where(i => i.TopicId == topic.Id))
+            {
+                topic.InterestedStudents.Add(new TopicInterestDto(
+                    NormalizeAccount(interest.StudentEmail),
+                    NormalizeAccount(interest.ProfessorEmail),
+                    interest.ExpressedOn));
+            }
+
+            if (!persistedAssignments.TryGetValue(topic.Id, out var assignment))
             {
                 continue;
             }
@@ -731,7 +781,17 @@
         _errorMessage = null;
     }
 
-    private async Task AssignToCurrentStudentAsync(Guid id)
+    private bool HasCurrentStudentExpressedInterest(ThesisTopic topic)
+    {
+        if (Session.Role != UserRole.Student)
+        {
+            return false;
+        }
+
+        return topic.InterestedStudents.Any(interest => NormalizeAccount(interest.StudentEmail) == CurrentAccount);
+    }
+
+    private async Task ExpressInterestAsync(Guid id)
     {
         if (Session.Role != UserRole.Student)
         {
@@ -744,30 +804,88 @@
             return;
         }
 
-        _assigningTopicIds.Add(id);
+        if (HasCurrentStudentExpressedInterest(topic))
+        {
+            _successMessage = $"Your interest in '{topic.Title}' is already registered.";
+            _errorMessage = null;
+            return;
+        }
+
+        _topicActionInProgressIds.Add(id);
         try
         {
-            var result = await TopicAssignmentService.AssignTopicAsync(
+            var recorded = await InterestService.RecordInterestAsync(
                 topic.Id,
                 topic.Title,
                 Session.UserName ?? string.Empty,
                 topic.SupervisingProfessorAccount);
 
-            if (!result.Success)
+            if (!recorded)
             {
-                _errorMessage = result.Error ?? "Unable to assign topic.";
+                _errorMessage = "Unable to register your interest.";
                 _successMessage = null;
                 return;
             }
 
-            topic.Status = TopicStatus.Ongoing;
-            topic.AssignedStudentAccount = CurrentAccount;
-            _successMessage = $"'{topic.Title}' is now Ongoing and linked to {topic.SupervisingProfessor}.";
+            await ApplyPersistedStateAsync();
+
+            _successMessage = $"Your interest in '{topic.Title}' has been sent to {topic.SupervisingProfessor}.";
             _errorMessage = null;
         }
         finally
         {
-            _assigningTopicIds.Remove(id);
+            _topicActionInProgressIds.Remove(id);
+        }
+    }
+
+    private async Task AssignInterestedStudentAsync(Guid topicId, string studentEmail)
+    {
+        if (Session.Role != UserRole.Professor)
+        {
+            return;
+        }
+
+        var topic = _topics.FirstOrDefault(x => x.Id == topicId);
+        if (topic is null || topic.Status != TopicStatus.Open || !IsCurrentProfessorInCharge(topic))
+        {
+            return;
+        }
+
+        var normalizedStudentEmail = NormalizeAccount(studentEmail);
+        if (!topic.InterestedStudents.Any(interest => NormalizeAccount(interest.StudentEmail) == normalizedStudentEmail))
+        {
+            _errorMessage = "Choose a student who has expressed interest in this topic.";
+            _successMessage = null;
+            return;
+        }
+
+        _topicActionInProgressIds.Add(topicId);
+        try
+        {
+            var result = await TopicAssignmentService.AssignTopicAsync(
+                topic.Id,
+                topic.Title,
+                studentEmail,
+                topic.SupervisingProfessorAccount);
+
+            if (!result.Success)
+            {
+                _errorMessage = result.Error ?? "Unable to assign the selected student.";
+                _successMessage = null;
+                return;
+            }
+
+            await InterestService.RemoveInterestAsync(topicId, studentEmail);
+            await ApplyPersistedStateAsync();
+
+            topic.Status = TopicStatus.Ongoing;
+            topic.AssignedStudentAccount = normalizedStudentEmail;
+            _successMessage = $"'{topic.Title}' assigned to {normalizedStudentEmail}.";
+            _errorMessage = null;
+        }
+        finally
+        {
+            _topicActionInProgressIds.Remove(topicId);
         }
     }
 
