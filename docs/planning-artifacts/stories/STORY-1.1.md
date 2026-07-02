@@ -3,9 +3,10 @@ title: "STORY-1.1: Design and Create EF Core Domain Model"
 epic: "Epic 1: Authentication & Data Foundation"
 sprint: "Week 1 (2026-06-27 to 2026-07-03)"
 priority: "P0 - Critical Path"
-status: "ready-for-dev"
+status: "completed"
 date_created: 2026-06-26
-acceptance_criteria_met: false
+date_completed: 2026-06-26
+acceptance_criteria_met: true
 ---
 
 # STORY-1.1: Design and Create EF Core Domain Model
@@ -227,16 +228,16 @@ public void AssignSupervisor_WhenAlreadyAssigned_ThrowsException()
 
 ## Success Checklist
 
-- [ ] All 5 entity classes created (Student, Professor, Assignment, ThesisUpdate, Feedback)
-- [ ] `DomainException` created in Exceptions folder
-- [ ] `UpdateStatus` enum created
-- [ ] All navigation properties defined (FK relationships)
-- [ ] Domain methods implemented with validation
-- [ ] All unit tests created and passing
-- [ ] Domain layer coverage ≥ 70%
-- [ ] No EF Core dependencies in University.Domain
-- [ ] Code compiles without warnings
-- [ ] All acceptance criteria verified
+- [x] All 5 entity classes created (Student, Professor, Assignment, ThesisUpdate, Feedback)
+- [x] `DomainException` created in Exceptions folder
+- [x] `UpdateStatus` enum created
+- [x] All navigation properties defined (FK relationships)
+- [x] Domain methods implemented with validation
+- [x] All unit tests created and passing
+- [x] Domain layer coverage ≥ 70%
+- [x] No EF Core dependencies in University.Domain
+- [x] Code compiles without warnings
+- [x] All acceptance criteria verified
 
 ---
 

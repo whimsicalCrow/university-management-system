@@ -16,36 +16,6 @@ Tasks:
 - [x] Create sample command, query, and validator demonstrating the pattern and reference them in docs.
 - [x] Update developer guide to include CQRS folder structure and naming standards.
 
-Dev Agent Record
-Tasks:
-- [x] Add MediatR and FluentValidation packages and configure services in Program.cs.
-- [x] Implement ValidationBehavior and LoggingBehavior with associated tests.
-- [x] Create sample command, query, and validator demonstrating the pattern and reference them in docs.
-- [x] Update developer guide to include CQRS folder structure and naming standards.
-
-Debug Log References:
-- 2025-10-24: dotnet test tests/University.UnitTests/University.UnitTests.csproj
-- 2025-10-24: dotnet test tests/University.IntegrationTests/University.IntegrationTests.csproj
-
-Completion Notes:
-- Introduced logging pipeline behavior, sample CQRS handlers, and refreshed developer guidance.
-
-File List:
-- University.Application/Common/Behaviors/LoggingBehavior.cs
-- University.Application/DependencyInjection/ApplicationServiceCollectionExtensions.cs
-- University.Application/University.Application.csproj
-- University.Application/Samples/Commands/CreateSampleNote/CreateSampleNoteCommand.cs
-- University.Application/Samples/Queries/GetSampleNotes/GetSampleNotesQuery.cs
-- University.Application/Samples/Shared/SampleNoteDto.cs
-- tests/University.UnitTests/LoggingBehaviorTests.cs
-- tests/University.UnitTests/ValidationBehaviorTests.cs
-- tests/University.IntegrationTests/MeetingActionItemIntegrationTests.cs
-- tests/University.IntegrationTests/UnitTest1.cs
-- docs/developer-guide.md
-
-Change Log:
-- 2025-10-24: Added logging pipeline behavior and wired MediatR registrations.
-- 2025-10-24: Created sample CQRS handlers and documented conventions in developer guide.
-- 2025-10-24: Added unit and integration test coverage for validation and logging behaviors.
-
-Status: Ready for Review
+Implementation Notes:
+- Historical implementation notes indicate progress on MediatR/validation behaviors.
+- Current codebase confirms MediatR usage and command/query handlers, but this story remains marked as Partially Implemented in the status matrix until full AC closure is verified.

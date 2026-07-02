@@ -1,3 +1,14 @@
+---
+title: "STORY-1.3: Integrate ASP.NET Core Identity"
+epic: "Epic 1: Authentication & Data Foundation"
+sprint: "Week 1 (2026-06-27 to 2026-07-03)"
+priority: "P0 - Critical Path"
+status: "completed"
+date_created: 2026-06-26
+date_completed: 2026-06-26
+acceptance_criteria_met: true
+---
+
 # Story 1.3: Integrate ASP.NET Core Identity
 
 **Epic:** Epic 1 — Authentication & Data Foundation  
