@@ -11,14 +11,14 @@
         <div class="login-brand">
             <div class="login-logo">
                 <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="48" height="48" rx="12" fill="#0b4f75"/>
-                    <path d="M24 10L38 17V22C38 30.837 31.732 39.026 24 41C16.268 39.026 10 30.837 10 22V17L24 10Z" fill="#4aa3df" opacity="0.35"/>
+                    <rect width="48" height="48" rx="8" fill="#8c1116"/>
+                    <path d="M24 10L38 17V22C38 30.837 31.732 39.026 24 41C16.268 39.026 10 30.837 10 22V17L24 10Z" fill="#d4c4a1" opacity="0.45"/>
                     <path d="M14 19.5L24 14L34 19.5V24C34 30.627 29.523 36.82 24 38.5C18.477 36.82 14 30.627 14 24V19.5Z" fill="white" opacity="0.15"/>
-                    <text x="24" y="28" text-anchor="middle" fill="white" font-size="14" font-family="Open Sans, sans-serif" font-weight="700">TC</text>
+                    <text x="24" y="28" text-anchor="middle" fill="white" font-size="14" font-family="Manrope, Open Sans, sans-serif" font-weight="700">TC</text>
                 </svg>
             </div>
             <h1 class="login-title">Thesis Collaboration</h1>
-            <p class="login-subtitle">Welcome to the Portal</p>
+            <p class="login-subtitle">Sign in to continue</p>
         </div>
 
         @* ── Login Form ── *@
@@ -31,20 +31,21 @@
             }
 
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" placeholder="student1@univ.edu" @bind="email" />
+                <label for="email" class="login-label">Email</label>
+                <input type="email" class="login-input w-100" id="email" placeholder="student1@univ.edu" @bind="email" />
             </div>
 
             <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" placeholder="TempPass123!" @bind="password" />
+                <label for="password" class="login-label">Password</label>
+                <input type="password" class="login-input w-100" id="password" placeholder="TempPass123!" @bind="password" />
             </div>
 
-            <button class="btn btn-primary w-100" @onclick="HandleLogin">Login</button>
+            <button class="btn btn-login w-100 mt-4" @onclick="HandleLogin">Login</button>
+            <a class="login-help-link d-inline-block mt-3" href="#">Forgot your password?</a>
         </div>
 
         @* ── Test Credentials ── *@
-        <div class="alert alert-info mt-4">
+        <div class="login-demo mt-4">
             <strong>Demo Credentials:</strong><br/>
             Student: student1@univ.edu / TempPass123!<br/>
             Professor: prof1@univ.edu / TempPass123!
@@ -98,48 +99,3 @@
         public string? Message { get; set; }
     }
 }
-
-<style>
-    .login-page {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-
-    .login-card {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        padding: 40px;
-        width: 100%;
-        max-width: 400px;
-    }
-
-    .login-brand {
-        text-align: center;
-        margin-bottom: 30px;
-    }
-
-    .login-logo {
-        margin-bottom: 15px;
-    }
-
-    .login-title {
-        font-size: 24px;
-        font-weight: 700;
-        margin: 10px 0 5px 0;
-        color: #333;
-    }
-
-    .login-subtitle {
-        font-size: 14px;
-        color: #999;
-        margin: 0;
-    }
-
-    .login-form {
-        margin-bottom: 20px;
-    }
-</style>

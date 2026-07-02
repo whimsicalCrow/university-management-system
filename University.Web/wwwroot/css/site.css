@@ -1,12 +1,20 @@
-:root {
-    --eclass-blue-dark: #0b4f75;
-    --eclass-blue: #0f6faa;
-    --eclass-blue-light: #4aa3df;
-    --eclass-green: #54b070;
-    --eclass-bg: #f2f6fb;
+﻿:root {
+    --eclass-blue-dark: #5f0f13;
+    --eclass-blue: #8c1116;
+    --eclass-blue-light: #b73437;
+    --eclass-green: #2f6f44;
+    --eclass-bg: #ffffff;
     --eclass-card: #ffffff;
-    --eclass-text: #16324f;
-    --eclass-muted: #5f7387;
+    --eclass-text: #111111;
+    --eclass-muted: #666666;
+    --ece-charcoal: #232323;
+    --ece-footer: #575555;
+    --ece-primary-rgb: 140, 17, 22;
+
+    --bs-primary: #8c1116;
+    --bs-primary-rgb: 140, 17, 22;
+    --bs-link-color: #8c1116;
+    --bs-link-hover-color: #5f0f13;
 }
 
 * {
@@ -14,11 +22,25 @@
 }
 
 body {
-    font-family: 'Open Sans', 'Noto Sans Greek', 'Segoe UI', sans-serif;
+    font-family: 'Roboto', 'Segoe UI', sans-serif;
     margin: 0;
     background: var(--eclass-bg);
     color: var(--eclass-text);
     min-height: 100vh;
+    font-weight: 300;
+    line-height: 1.7;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.section-heading,
+.site-navbar .navbar-brand {
+    font-family: 'Roboto Condensed', 'Roboto', sans-serif;
+    font-weight: 700;
 }
 
 a {
@@ -38,12 +60,13 @@ a:focus {
 }
 
 .site-header {
-    background: linear-gradient(90deg, var(--eclass-blue-dark) 0%, var(--eclass-blue) 60%, var(--eclass-blue-light) 100%);
+    background: #fff;
     color: #fff;
-    box-shadow: 0 6px 12px rgba(11, 79, 117, 0.18);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .site-navbar {
+    background: var(--eclass-blue);
     padding: 0.9rem 0;
 }
 
@@ -84,7 +107,7 @@ a:focus {
 }
 
 .site-footer {
-    background: #0a3e5f;
+    background: var(--ece-footer);
     color: rgba(255, 255, 255, 0.85);
     padding: 2.5rem 0;
     font-size: 0.95rem;
@@ -100,14 +123,14 @@ a:focus {
 }
 
 .hero-section {
-    background: linear-gradient(135deg, rgba(15, 111, 170, 0.97) 0%, rgba(11, 79, 117, 0.92) 65%);
+    background: linear-gradient(135deg, rgba(140, 17, 22, 0.96) 0%, rgba(95, 15, 19, 0.92) 65%);
     color: #fff;
     border-radius: 20px;
     padding: 3.5rem 3rem;
     margin-bottom: 3rem;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 25px 45px rgba(15, 65, 103, 0.25);
+    box-shadow: 0 25px 45px rgba(95, 15, 19, 0.25);
 }
 
 .hero-section::after {
@@ -115,7 +138,7 @@ a:focus {
     position: absolute;
     inset: auto -30% -35% 15%;
     height: 60%;
-    background: radial-gradient(circle at center, rgba(83, 176, 112, 0.6), transparent 60%);
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.28), transparent 60%);
     opacity: 0.7;
 }
 
@@ -196,14 +219,14 @@ a:focus {
     border-radius: 16px;
     border: none;
     background: var(--eclass-card);
-    box-shadow: 0 12px 28px rgba(15, 65, 103, 0.08);
+    box-shadow: 0 12px 28px rgba(95, 15, 19, 0.08);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .quick-action-card:hover,
 .info-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 18px 36px rgba(15, 65, 103, 0.14);
+    box-shadow: 0 18px 36px rgba(95, 15, 19, 0.14);
 }
 
 .card-icon {
@@ -223,7 +246,7 @@ a:focus {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(15, 111, 170, 0.12);
+    background: rgba(140, 17, 22, 0.12);
     color: var(--eclass-blue);
     border-radius: 999px;
     padding: 0.35rem 0.9rem;
@@ -243,7 +266,7 @@ a:focus {
 }
 
 .ticker-card {
-    background: linear-gradient(140deg, rgba(15, 111, 170, 0.95), rgba(11, 79, 117, 0.95));
+    background: linear-gradient(140deg, rgba(140, 17, 22, 0.95), rgba(95, 15, 19, 0.95));
     color: #fff;
 }
 
@@ -258,7 +281,7 @@ a:focus {
 }
 
 .callout-panel {
-    background: linear-gradient(90deg, rgba(11, 79, 117, 0.98), rgba(9, 69, 101, 0.96));
+    background: linear-gradient(90deg, rgba(95, 15, 19, 0.98), rgba(76, 12, 15, 0.96));
     color: #fff;
     border-radius: 20px;
     padding: 2.2rem;
@@ -273,7 +296,7 @@ a:focus {
 
 .section-divider {
     height: 1px;
-    background: linear-gradient(90deg, rgba(15, 111, 170, 0), rgba(15, 111, 170, 0.35), rgba(15, 111, 170, 0));
+    background: linear-gradient(90deg, rgba(140, 17, 22, 0), rgba(140, 17, 22, 0.35), rgba(140, 17, 22, 0));
     margin: 2.5rem 0;
 }
 
@@ -321,7 +344,7 @@ a:focus {
         border-radius: 16px;
         border: none;
         background: var(--eclass-card);
-        box-shadow: 0 12px 28px rgba(15, 65, 103, 0.08);
+        box-shadow: 0 12px 28px rgba(95, 15, 19, 0.08);
     }
 
     .assignment-list {
@@ -335,7 +358,7 @@ a:focus {
 
     .assignment-item {
         border-radius: 14px !important;
-        border: 1px solid rgba(15, 111, 170, 0.12) !important;
+        border: 1px solid rgba(140, 17, 22, 0.12) !important;
         padding: 0.9rem 1rem;
         color: var(--eclass-text);
         background: var(--eclass-card);
@@ -344,18 +367,18 @@ a:focus {
 
     .assignment-item:hover {
         transform: translateY(-2px);
-        box-shadow: 0 12px 24px rgba(15, 65, 103, 0.1);
+        box-shadow: 0 12px 24px rgba(95, 15, 19, 0.1);
     }
 
     .assignment-item.active {
-        background: rgba(15, 111, 170, 0.08) !important;
-        border-color: rgba(15, 111, 170, 0.35) !important;
+        background: rgba(140, 17, 22, 0.08) !important;
+        border-color: rgba(140, 17, 22, 0.35) !important;
         color: var(--eclass-blue-dark);
     }
 
     .recent-assignment-entry {
         padding: 0.75rem 0;
-        border-bottom: 1px solid rgba(15, 111, 170, 0.12);
+        border-bottom: 1px solid rgba(140, 17, 22, 0.12);
     }
 
     .recent-assignment-entry:last-child {
@@ -369,11 +392,11 @@ a:focus {
     }
 
     .modal-header {
-        border-bottom: 1px solid rgba(15, 111, 170, 0.15);
+        border-bottom: 1px solid rgba(140, 17, 22, 0.15);
     }
 
     .modal-footer {
-        border-top: 1px solid rgba(15, 111, 170, 0.15);
+        border-top: 1px solid rgba(140, 17, 22, 0.15);
     }
 
     .assignment-item .badge {
@@ -388,12 +411,12 @@ a:focus {
         border-radius: 20px;
         border: none;
         background: var(--eclass-card);
-        box-shadow: 0 20px 40px rgba(15, 65, 103, 0.12);
+        box-shadow: 0 20px 40px rgba(95, 15, 19, 0.12);
     }
 
     .update-editor {
         border-radius: 16px;
-        border: 1px solid rgba(15, 111, 170, 0.15);
+        border: 1px solid rgba(140, 17, 22, 0.15);
         padding: 1rem 1.2rem;
         min-height: 240px;
         font-size: 0.95rem;
@@ -402,15 +425,15 @@ a:focus {
     }
 
     .update-editor:focus {
-        border-color: rgba(15, 111, 170, 0.45);
-        box-shadow: 0 0 0 0.25rem rgba(15, 111, 170, 0.15);
+        border-color: rgba(140, 17, 22, 0.45);
+        box-shadow: 0 0 0 0.25rem rgba(140, 17, 22, 0.15);
     }
 
     .preview-pane {
         background: var(--eclass-card);
         border-radius: 18px;
-        border: 1px solid rgba(15, 111, 170, 0.12);
-        box-shadow: inset 0 0 0 1px rgba(15, 111, 170, 0.05);
+        border: 1px solid rgba(140, 17, 22, 0.12);
+        box-shadow: inset 0 0 0 1px rgba(140, 17, 22, 0.05);
         min-height: 260px;
         display: flex;
         flex-direction: column;
@@ -418,10 +441,10 @@ a:focus {
 
     .preview-header {
         padding: 0.85rem 1.2rem;
-        border-bottom: 1px solid rgba(15, 111, 170, 0.12);
+        border-bottom: 1px solid rgba(140, 17, 22, 0.12);
         font-weight: 600;
         color: var(--eclass-blue);
-        background: rgba(15, 111, 170, 0.05);
+        background: rgba(140, 17, 22, 0.05);
         border-top-left-radius: 18px;
         border-top-right-radius: 18px;
         display: flex;
@@ -444,7 +467,7 @@ a:focus {
     }
 
     .preview-content pre {
-        background: #0f6faa10;
+        background: #8c111610;
         border-radius: 12px;
         padding: 1rem;
         font-size: 0.9rem;
@@ -452,9 +475,9 @@ a:focus {
 
     .autosave-banner {
         border-radius: 14px;
-        background: rgba(15, 111, 170, 0.08);
+        background: rgba(140, 17, 22, 0.08);
         color: var(--eclass-blue-dark);
-        border: 1px solid rgba(15, 111, 170, 0.18);
+        border: 1px solid rgba(140, 17, 22, 0.18);
     }
 
     .draft-badge {
@@ -471,7 +494,7 @@ a:focus {
     .timeline-controls .timeline-filter {
         min-width: 220px;
         border-radius: 12px;
-        border: 1px solid rgba(15, 111, 170, 0.15);
+        border: 1px solid rgba(140, 17, 22, 0.15);
         padding: 0.6rem 1rem;
     }
 
@@ -488,7 +511,7 @@ a:focus {
         top: 0.2rem;
         bottom: 0.2rem;
         width: 3px;
-        background: linear-gradient(180deg, rgba(15, 111, 170, 0.25), rgba(15, 111, 170, 0));
+        background: linear-gradient(180deg, rgba(140, 17, 22, 0.25), rgba(140, 17, 22, 0));
     }
 
     .timeline-entry {
@@ -506,13 +529,13 @@ a:focus {
         border-radius: 50%;
         left: -0.15rem;
         top: 0.4rem;
-        box-shadow: 0 0 0 4px rgba(15, 111, 170, 0.12);
+        box-shadow: 0 0 0 4px rgba(140, 17, 22, 0.12);
     }
 
     .timeline-card {
         border: none;
         border-radius: 18px;
-        box-shadow: 0 18px 36px rgba(15, 65, 103, 0.12);
+        box-shadow: 0 18px 36px rgba(95, 15, 19, 0.12);
         background: var(--eclass-card);
     }
 
@@ -529,7 +552,7 @@ a:focus {
 
     .timeline-full {
         border-radius: 14px;
-        background: rgba(15, 111, 170, 0.03);
+        background: rgba(140, 17, 22, 0.03);
         padding: 1.1rem 1.3rem;
         color: var(--eclass-text);
     }
@@ -540,7 +563,7 @@ a:focus {
 
     .timeline-full code,
     .timeline-full pre {
-        background: rgba(15, 111, 170, 0.08);
+        background: rgba(140, 17, 22, 0.08);
         border-radius: 10px;
         padding: 0.4rem 0.6rem;
     }
@@ -548,7 +571,7 @@ a:focus {
     .timeline-empty-icon {
         font-size: 3rem;
         display: block;
-        color: rgba(15, 111, 170, 0.35);
+        color: rgba(140, 17, 22, 0.35);
     }
 
     .status-badge {
@@ -560,7 +583,7 @@ a:focus {
     }
 
     .status-badge.status-pending {
-        background: rgba(15, 111, 170, 0.12);
+        background: rgba(140, 17, 22, 0.12);
         color: var(--eclass-blue);
     }
 
@@ -575,8 +598,8 @@ a:focus {
     }
 
     .status-badge.status-draft {
-        background: rgba(15, 111, 170, 0.08);
-        color: rgba(15, 111, 170, 0.65);
+        background: rgba(140, 17, 22, 0.08);
+        color: rgba(140, 17, 22, 0.65);
     }
 
     .edited-indicator {
@@ -600,18 +623,18 @@ a:focus {
             padding-left: 1.2rem;
         }
     }
-/* ── Thesis Topics page ────────────────────────────────────────────────────── */
+/* â”€â”€ Thesis Topics page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .topic-card {
     border-radius: 16px;
     border: none;
     background: var(--eclass-card);
-    box-shadow: 0 8px 22px rgba(15, 65, 103, 0.08);
+    box-shadow: 0 8px 22px rgba(95, 15, 19, 0.08);
     transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .topic-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 14px 30px rgba(15, 65, 103, 0.13);
+    box-shadow: 0 14px 30px rgba(95, 15, 19, 0.13);
 }
 
 .topic-draft {
@@ -633,7 +656,7 @@ a:focus {
 }
 
 .topic-tag {
-    background: rgba(15, 111, 170, 0.10);
+    background: rgba(140, 17, 22, 0.10);
     color: var(--eclass-blue);
     border-radius: 999px;
     padding: 0.2rem 0.7rem;
@@ -644,7 +667,7 @@ a:focus {
 }
 
 .topic-tag:hover {
-    background: rgba(15, 111, 170, 0.22);
+    background: rgba(140, 17, 22, 0.22);
 }
 
 .tag-toggle {
@@ -655,11 +678,11 @@ a:focus {
     transition: all 0.15s;
 }
 
-/* ── Login page ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ Login page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-body {
     margin: 0;
     min-height: 100vh;
-    background: linear-gradient(135deg, #0b4f75 0%, #0f6faa 55%, #4aa3df 100%);
+    background: #f5f5f5;
 }
 
 .login-bg {
@@ -668,18 +691,20 @@ a:focus {
     align-items: center;
     justify-content: center;
     padding: 2rem 1rem;
+    background: #f5f5f5;
 }
 
 .login-page {
     width: 100%;
-    max-width: 460px;
+    max-width: 540px;
 }
 
 .login-card {
     background: #fff;
-    border-radius: 20px;
-    box-shadow: 0 24px 64px rgba(11, 79, 117, 0.28);
-    padding: 2.5rem 2.5rem 2rem;
+    border-radius: 0;
+    border: 1px solid #dadada;
+    box-shadow: 0 0 30px 0 rgba(255, 255, 255, 0);
+    padding: 1rem 1.5rem 1.25rem;
 }
 
 @media (max-width: 480px) {
@@ -690,7 +715,7 @@ a:focus {
 
 .login-brand {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.4rem;
 }
 
 .login-logo {
@@ -698,37 +723,45 @@ a:focus {
 }
 
 .login-title {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: var(--eclass-blue-dark);
+    color: #000;
     margin: 0 0 0.25rem;
+    font-family: 'Manrope', 'Open Sans', sans-serif;
 }
 
 .login-subtitle {
-    font-size: 0.9rem;
-    color: var(--eclass-muted);
+    font-size: 0.88rem;
+    color: #666;
     margin: 0;
+    font-family: 'Manrope', 'Open Sans', sans-serif;
 }
 
 .login-label {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: var(--eclass-text);
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    color: #000;
+    letter-spacing: 0;
+    text-transform: none;
+    margin-bottom: 0.45rem;
+    font-family: 'Manrope', 'Open Sans', sans-serif;
 }
 
 .login-input {
-    border-radius: 10px;
-    border: 2px solid #e2eaf3;
-    padding: 0.65rem 1rem;
+    border-radius: 4px;
+    border: 1px solid #dadada;
+    background: #e9e9e9;
+    padding: 0.5rem 0.95rem;
     font-size: 0.95rem;
-    transition: border-color 0.18s, box-shadow 0.18s;
+    color: #000;
+    transition: border-color 0.18s, box-shadow 0.18s, background-color 0.18s;
+    font-family: 'Manrope', 'Open Sans', sans-serif;
 }
 
 .login-input:focus {
-    border-color: var(--eclass-blue);
-    box-shadow: 0 0 0 3px rgba(15, 111, 170, 0.15);
+    border-color: #c7c7c7;
+    background: #f0f0f0;
+    box-shadow: none;
     outline: none;
 }
 
@@ -777,12 +810,12 @@ a:focus {
     border-color: var(--eclass-blue);
     background: #edf5fb;
     transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(15, 111, 170, 0.18);
+    box-shadow: 0 12px 28px rgba(140, 17, 22, 0.18);
 }
 
 .role-card:active {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(15, 111, 170, 0.14);
+    box-shadow: 0 4px 12px rgba(140, 17, 22, 0.14);
 }
 
 .role-card__icon {
@@ -800,7 +833,7 @@ a:focus {
 }
 
 .role-card__icon--professor {
-    background: rgba(15, 111, 170, 0.12);
+    background: rgba(140, 17, 22, 0.12);
     color: var(--eclass-blue);
 }
 
@@ -818,23 +851,23 @@ a:focus {
 
 /* Login submit button */
 .btn-login {
-    background: linear-gradient(90deg, var(--eclass-blue-dark) 0%, var(--eclass-blue) 100%);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 1rem;
-    padding: 0.75rem;
-    letter-spacing: 0.03em;
-    transition: opacity 0.18s, transform 0.14s, box-shadow 0.18s;
-    box-shadow: 0 6px 18px rgba(15, 111, 170, 0.28);
+    background: #d4c4a1;
+    color: #000;
+    border: 1px solid #d4c4a1;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.6rem 0.75rem;
+    letter-spacing: 0;
+    transition: background-color 0.18s, border-color 0.18s, color 0.18s;
+    box-shadow: none;
+    font-family: 'Manrope', 'Open Sans', sans-serif;
 }
 
 .btn-login:hover:not(:disabled) {
-    opacity: 0.92;
-    transform: translateY(-1px);
-    box-shadow: 0 10px 24px rgba(15, 111, 170, 0.36);
-    color: #fff;
+    background: #c5b189;
+    border-color: #c5b189;
+    color: #000;
 }
 
 .btn-login:disabled {
@@ -842,7 +875,29 @@ a:focus {
     cursor: not-allowed;
 }
 
-/* ── Navbar user badge + logout ─────────────────────────────────────────────── */
+.login-help-link {
+    color: #9e8743;
+    text-decoration-color: #9e8743;
+    font-family: 'Manrope', 'Open Sans', sans-serif;
+}
+
+.login-help-link:hover,
+.login-help-link:focus {
+    color: #7f6d37;
+    text-decoration-color: #7f6d37;
+}
+
+.login-demo {
+    border: 1px solid #dadada;
+    background: #f7f7f7;
+    color: #333;
+    padding: 0.9rem 0.95rem;
+    border-radius: 0;
+    font-family: 'Manrope', 'Open Sans', sans-serif;
+    line-height: 1.5;
+}
+
+/* â”€â”€ Navbar user badge + logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .nav-user-badge {
     display: flex;
     align-items: center;
@@ -868,8 +923,8 @@ a:focus {
 }
 
 .nav-user-role--prof {
-    background: rgba(74, 163, 223, 0.28);
-    color: #c6eaff;
+    background: rgba(255, 255, 255, 0.24);
+    color: #fff;
 }
 
 .nav-user-name {
@@ -892,3 +947,46 @@ a:focus {
 .nav-logout:hover {
     color: #fff !important;
 }
+
+/* ECE-like defaults for Bootstrap color usage */
+a:not(.btn) {
+    color: var(--eclass-blue);
+}
+
+a:not(.btn):hover,
+a:not(.btn):focus {
+    color: var(--eclass-blue-dark);
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--eclass-blue);
+    --bs-btn-border-color: var(--eclass-blue);
+    --bs-btn-hover-bg: var(--eclass-blue-dark);
+    --bs-btn-hover-border-color: var(--eclass-blue-dark);
+    --bs-btn-active-bg: var(--eclass-blue-dark);
+    --bs-btn-active-border-color: var(--eclass-blue-dark);
+    --bs-btn-disabled-bg: var(--eclass-blue);
+    --bs-btn-disabled-border-color: var(--eclass-blue);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--eclass-blue);
+    --bs-btn-border-color: var(--eclass-blue);
+    --bs-btn-hover-bg: var(--eclass-blue);
+    --bs-btn-hover-border-color: var(--eclass-blue);
+    --bs-btn-active-bg: var(--eclass-blue-dark);
+    --bs-btn-active-border-color: var(--eclass-blue-dark);
+}
+
+.text-primary {
+    color: var(--eclass-blue) !important;
+}
+
+.bg-primary {
+    background-color: var(--eclass-blue) !important;
+}
+
+.border-primary {
+    border-color: rgba(var(--ece-primary-rgb), 0.35) !important;
+}
+
