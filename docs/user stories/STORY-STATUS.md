@@ -10,7 +10,7 @@ This matrix aligns user story docs with the current codebase and implementation 
 | US-004 | Provision Development and Test Environments | Infrastructure | Planned | Medium | Environment automation not fully represented in current implementation docs. |
 | US-010 | Implement Thesis Project Domain Aggregate | Backend | Partially Implemented | Medium | Thesis-related domain exists, but full aggregate scope in story not fully evident. |
 | US-011 | Build Supervisor Assignment Workflow | UI | Partially Implemented | High | Assignment flow exists, but role model differs from doc (professor-driven vs admin workflow). |
-| US-012 | Create Student Thesis Dashboard | UI | Partially Implemented | High | Dashboard page exists; DB-backed data integration remains pending. |
+| US-012 | Create Student Thesis Dashboard | UI | Partially Implemented | High | DB-backed dashboard projections are implemented; File Library route exists and reads persisted attachment metadata from thesis updates. Remaining closure: end-to-end upload persistence flow completion (US-021 dependency). |
 | US-013 | Establish CQRS and Validation Foundation | Backend | Partially Implemented | Medium | MediatR usage exists; full cross-solution behavior/validation conventions need explicit closure. |
 | US-020 | Deliver Thesis Update Timeline | UI | Partially Implemented | High | Thesis updates page and timeline behavior exist; full AC closure pending. |
 | US-021 | Implement Attachment Storage Pipeline | Backend | Planned | High | Attachment pipeline not present as completed feature. |
@@ -24,4 +24,4 @@ This matrix aligns user story docs with the current codebase and implementation 
 
 ## Next Recommended Story
 
-- US-012 completion: replace student dashboard placeholders with database-backed projections and tests.
+- US-021 implementation: complete attachment storage pipeline so thesis update uploads are persisted and surfaced end-to-end in File Library.

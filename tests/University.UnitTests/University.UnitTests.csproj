@@ -10,9 +10,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\University.Domain\University.Domain.csproj" />
     <ProjectReference Include="..\..\University.Application\University.Application.csproj" />
+    <ProjectReference Include="..\..\University.Web\University.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="bunit" Version="1.32.7" />
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />

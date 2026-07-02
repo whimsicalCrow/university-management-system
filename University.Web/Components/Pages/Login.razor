@@ -1,6 +1,6 @@
 @page "/login"
 @layout LoginLayout
-@inject IMediator Mediator
+@inject IJSRuntime JS
 @inject NavigationManager Nav
 @inject UserSessionService Session
 
@@ -67,10 +67,9 @@
     private async Task HandleLogin()
     {
         errorMessage = "";
-        
-        var command = new LoginCommand { Email = email, Password = password };
-        var result = await Mediator.Send(command);
-        
+
+        var result = await JS.InvokeAsync<LoginApiResponse>("thesisAuth.login", email, password);
+
         if (result.Success)
         {
             if (!Enum.TryParse<UserRole>(result.Role, ignoreCase: true, out var sessionRole))
@@ -90,6 +89,13 @@
         {
             errorMessage = result.Message ?? "Login failed";
         }
+    }
+
+    private sealed class LoginApiResponse
+    {
+        public bool Success { get; set; }
+        public string? Role { get; set; }
+        public string? Message { get; set; }
     }
 }
 

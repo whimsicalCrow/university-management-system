@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject UserSessionService Session
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @implements IDisposable
 
 @if (Session.IsAuthenticated)
@@ -38,15 +39,43 @@
 </div>
 
 @code {
+    protected override async Task OnInitializedAsync()
+    {
+        Session.OnChange += StateHasChanged;
+        await SyncSessionFromIdentityAsync();
+    }
+
     protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender && !Session.IsAuthenticated)
             Nav.NavigateTo("/login");
     }
 
-    protected override void OnInitialized()
+    private async Task SyncSessionFromIdentityAsync()
     {
-        Session.OnChange += StateHasChanged;
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
+        if (Session.IsAuthenticated)
+        {
+            return;
+        }
+
+        var email = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            ?? user.Identity?.Name
+            ?? "User";
+
+        var roleClaim = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var role = string.Equals(roleClaim, "Professor", StringComparison.OrdinalIgnoreCase)
+            ? UserRole.Professor
+            : UserRole.Student;
+
+        Session.Login(email, role);
     }
 
     public void Dispose()
