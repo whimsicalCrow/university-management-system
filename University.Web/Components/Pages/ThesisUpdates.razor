@@ -80,9 +80,9 @@
                                       disabled="@isSaving"></textarea>
 
                             <div class="attachment-panel mt-3">
-                                <label class="form-label fw-semibold mb-2">Attachment (ZIP)</label>
+                                <label class="form-label fw-semibold mb-2">Attachment (PDF, DOCX, PPTX, ZIP)</label>
                                 <InputFile OnChange="OnAttachmentSelected"
-                                           accept=".zip,application/zip"
+                                           accept=".pdf,.docx,.pptx,.zip"
                                            disabled="@isSaving"
                                            class="form-control" />
                                 @if (!string.IsNullOrWhiteSpace(selectedAttachmentName))
@@ -219,7 +219,7 @@
                                             <span class="bi bi-file-earmark-zip me-1"></span>
                                             @if (item.ArtifactId.HasValue)
                                             {
-                                                <a href="@($"/api/thesis-artifacts/{item.ArtifactId.Value}")" download="@item.AttachmentFileName">@item.AttachmentFileName</a>
+                                                <a href="/attachments/download/@ArtifactStorage.GenerateDownloadToken(item.ArtifactId.Value)" download="@item.AttachmentFileName">@item.AttachmentFileName</a>
                                             }
                                             else
                                             {
@@ -517,10 +517,12 @@
         }
 
         var file = args.File;
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+        string[] allowed = [".pdf", ".docx", ".pptx", ".zip"];
 
-        if (!file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        if (!allowed.Contains(extension))
         {
-            validationMessage = "Επιτρέπονται μόνο αρχεία ZIP για την υποβολή ενημέρωσης.";
+            validationMessage = "Επιτρέπονται μόνο αρχεία PDF, DOCX, PPTX ή ZIP για την υποβολή ενημέρωσης.";
             selectedAttachmentName = null;
             selectedAttachmentSizeBytes = null;
             selectedAttachmentFile = null;
@@ -529,7 +531,7 @@
 
         if (file.Size > MaxAttachmentSizeBytes)
         {
-            validationMessage = $"Το αρχείο ZIP υπερβαίνει το όριο των {FormatFileSize(MaxAttachmentSizeBytes)}.";
+            validationMessage = $"Το αρχείο υπερβαίνει το όριο των {FormatFileSize(MaxAttachmentSizeBytes)}.";
             selectedAttachmentName = null;
             selectedAttachmentSizeBytes = null;
             selectedAttachmentFile = null;

@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using MediatR;
 using University.Application.Commands;
+using University.Application.Interfaces;
 using University.Infrastructure.Data;
+using University.Infrastructure.Repositories;
+using University.Infrastructure.Services;
 using University.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,11 +43,42 @@ builder.Services.AddAuthorizationBuilder()
 // Add MediatR
 builder.Services.AddMediatR(typeof(University.Application.Commands.LoginCommand));
 
+// Add Data Protection (used for signed download tokens)
+builder.Services.AddDataProtection();
+
+// Register attachment storage provider (Local or AzureBlob based on configuration)
+var storageProvider = builder.Configuration["Attachments:StorageProvider"] ?? "Local";
+if (storageProvider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<IAttachmentStorageService, AzureBlobAttachmentStorageService>();
+}
+else
+{
+    var localPath = Path.Combine(
+        builder.Environment.WebRootPath,
+        builder.Configuration["Attachments:LocalStoragePath"] ?? "attachments");
+    builder.Services.AddScoped<IAttachmentStorageService>(_ =>
+        new LocalFileAttachmentStorageService(localPath));
+}
+
+// Register virus scan service (NoOp placeholder; swap for real implementation when available)
+builder.Services.AddScoped<IVirusScanService, NoOpVirusScanService>();
+
+// Register artifact repository
+builder.Services.AddScoped<IThesisArtifactRepository, ThesisArtifactRepository>();
+
 builder.Services.AddScoped<UserSessionService>();
 builder.Services.AddSingleton<IThesisInterestService, ThesisInterestService>();
 builder.Services.AddScoped<IThesisTopicAssignmentService, ThesisTopicAssignmentService>();
 builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
-builder.Services.AddScoped<IThesisArtifactStorageService, ThesisArtifactStorageService>();
+
+// Register full-pipeline ThesisArtifactStorageService
+builder.Services.AddScoped<IThesisArtifactStorageService>(sp => new ThesisArtifactStorageService(
+    sp.GetRequiredService<UniversityDbContext>(),
+    sp.GetRequiredService<ISender>(),
+    sp.GetRequiredService<IAttachmentStorageService>(),
+    sp.GetRequiredService<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>(),
+    sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()));
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -131,12 +165,48 @@ app.MapGet("/api/thesis-artifacts/{artifactId:guid}",
             return Results.NotFound();
         }
 
+        if (artifact.Data is null)
+        {
+            // Storage-key-based artifact: use the signed download endpoint instead
+            return Results.NotFound();
+        }
+
         return Results.File(
             fileContents: artifact.Data,
             contentType: artifact.ContentType,
             fileDownloadName: artifact.FileName);
     })
     .RequireAuthorization("StudentOnly");
+
+// Signed time-limited download endpoint (new storage-pipeline artifacts)
+app.MapGet("/attachments/download/{token}",
+    async (
+        string token,
+        IThesisArtifactStorageService artifactStorage,
+        ClaimsPrincipal user,
+        ILogger<Program> logger,
+        CancellationToken cancellationToken) =>
+    {
+        var identityUserId = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous";
+
+        var download = await artifactStorage.DownloadByTokenAsync(token, cancellationToken);
+        if (download is null)
+        {
+            logger.LogWarning(
+                "Download rejected: invalid or expired token for user {UserId}, token prefix: {TokenPrefix}",
+                identityUserId,
+                token.Length > 8 ? token[..8] : token);
+            return Results.Forbid();
+        }
+
+        logger.LogInformation(
+            "Artifact download served for user {UserId}, file: {FileName}",
+            identityUserId,
+            download.FileName);
+
+        return Results.File(download.Stream, download.ContentType, download.FileName);
+    })
+    .RequireAuthorization();
 
 app.Run();
 
