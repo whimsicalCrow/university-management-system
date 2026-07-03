@@ -21,7 +21,7 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 | ID | Workstream | Task | Owner | Estimate (h) | Due | Status | Blocker | Evidence Required |
 |---|---|---|---|---:|---|---|---|---|
 | PR-01 | Scope | Freeze presentation scope and non-goals | Hermes | 1 | 2026-07-02 | done | None | Scope note committed in docs |
-| PR-02 | Core Feature | Complete US-021 attachment persistence end-to-end | Hermes | 6 | 2026-07-03 | not-started | None | Upload + retrieve demo + tests |
+| PR-02 | Core Feature | Complete US-021 attachment persistence end-to-end | Hermes | 6 | 2026-07-03 | done | None | Upload + retrieve demo + tests |
 | PR-03 | Core Feature | Complete US-022 feedback loop visibility | Hermes | 5 | 2026-07-04 | not-started | None | Professor feedback visible to student |
 | PR-04 | UX Hardening | Fix critical UI states for demo path (errors, empty states, role nav) | Hermes | 4 | 2026-07-05 | in-progress | None | Manual test checklist signed |
 | PR-05 | Reliability | Create clean startup/run script and verify from fresh terminal | Hermes | 2 | 2026-07-06 | in-progress | None | Successful clean run commands |
@@ -39,9 +39,9 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 - [x] Confirm no new scope additions accepted.
 
 ### 2026-07-03
-- [ ] PR-02 attachment pipeline complete.
-- [ ] Verify uploaded files appear in File Library and timeline.
-- [ ] Add or update tests for upload/retrieval/failure.
+- [x] PR-02 attachment pipeline complete.
+- [x] Verify uploaded files appear in File Library and timeline.
+- [x] Add or update tests for upload/retrieval/failure.
 
 ### 2026-07-04
 - [ ] PR-03 feedback loop complete.
@@ -93,6 +93,7 @@ All must be true:
 - 2026-07-02: Scope lock and presentation checklist created in this file.
 - 2026-07-02: Login UI updated and verified at `/login` (new subtitle and neutral panel).
 - 2026-07-02: Build succeeded (`University.Web.csproj`, latest task run).
+- 2026-07-03: PR-02 complete — US-021 attachment storage pipeline implemented and merged on `feature/us-021-attachment-storage-pipeline`. 87/87 tests pass (78 unit + 9 integration), 0 warnings. EF Core migration `20260703083327_AddThesisArtifactStoragePipeline` applied. 3-layer adversarial code review completed; 6 security/correctness patches applied (path traversal defence, infected-file purge, legacy token asymmetry fix, content-type fix, filename truncation fix, 404 for storage-key artifacts on old endpoint).
 - Security report path: fill on 2026-07-07.
 - Performance report path: fill on 2026-07-08.
 - Deck and runbook path: fill on 2026-07-09.
