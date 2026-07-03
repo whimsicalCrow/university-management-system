@@ -1,5 +1,6 @@
 # Build artifacts
 bin/
+bin-unlocked/
 obj/
 # User-specific files
 *.user
