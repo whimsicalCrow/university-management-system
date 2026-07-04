@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject UserSessionService Session
 @inject IThesisInterestService InterestService
+@inject IThesisNotificationService NotifService
 @inject IThesisTopicAssignmentService TopicAssignmentService
 
 <div class="container page-section">
@@ -9,24 +10,27 @@
         <div>
             <span class="highlight-tag mb-2">
                 <span class="bi bi-lightbulb-fill"></span>
-                @(Session.Role == UserRole.Professor ? "Professor View" : "Student View")
+                @(Session.Role == UserRole.Professor ? "Προβολή Καθηγητή" : "Προβολή Φοιτητή")
             </span>
-            <h1 class="section-heading mb-2">Thesis Topics</h1>
+            <h1 class="section-heading mb-2">Θέματα Διπλωματικής</h1>
             <p class="text-muted mb-0">
                 @if (Session.Role == UserRole.Professor)
                 {
-                    <span>Public topics are visible to everyone. You can manage your own draft and ongoing topics.</span>
+                    <span>Τα δημόσια θέματα είναι ορατά σε όλους. Μπορείτε να διαχειριστείτε τα δικά σας πρόχειρα και εν εξελίξει θέματα.</span>
                 }
                 else
                 {
-                    <span>You can browse public topics, express interest, and access only the ongoing topic assigned to you.</span>
+                    <span>Μπορείτε να περιηγηθείτε σε δημόσια θέματα, να εκδηλώσετε ενδιαφέρον και να αποκτήσετε πρόσβαση μόνο στο εν εξελίξει θέμα που σας έχει ανατεθεί.</span>
                 }
             </p>
         </div>
-        <button class="btn btn-primary mt-3 mt-lg-0" @onclick="OpenProposalForm">
-            <span class="bi bi-plus-lg me-1"></span>
-            @(Session.Role == UserRole.Professor ? "Propose New Topic" : "Suggest a Topic")
-        </button>
+        @if (Session.Role == UserRole.Professor)
+        {
+            <button class="btn btn-primary mt-3 mt-lg-0" @onclick="OpenProposalForm">
+                <span class="bi bi-plus-lg me-1"></span>
+                Πρόταση Νέου Θέματος
+            </button>
+        }
     </div>
 
     @if (!string.IsNullOrWhiteSpace(_successMessage))
@@ -51,16 +55,16 @@
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2 class="h5 fw-semibold mb-0">
-                        @(_editingId.HasValue ? "Edit Topic" : "Propose a Topic")
+                        @(_editingId.HasValue ? "Επεξεργασία Θέματος" : "Πρόταση Θέματος")
                     </h2>
                     <button class="btn btn-outline-secondary btn-sm" @onclick="CancelForm">
-                        <span class="bi bi-x-lg"></span> Cancel
+                        <span class="bi bi-x-lg"></span> Ακύρωση
                     </button>
                 </div>
 
                 <div class="row g-3">
                     <div class="col-12">
-                        <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Τίτλος <span class="text-danger">*</span></label>
                         <input class="form-control @(_formErrors.ContainsKey("Title") ? "is-invalid" : "")"
                                placeholder="e.g. Machine Learning for Smart Grid Optimisation"
                                @bind="_form.Title" @bind:event="oninput" />
@@ -71,7 +75,7 @@
                     </div>
 
                     <div class="col-12">
-                        <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Περιγραφή <span class="text-danger">*</span></label>
                         <textarea class="form-control @(_formErrors.ContainsKey("Description") ? "is-invalid" : "")"
                                   rows="4"
                                   placeholder="Summarise the research area, objectives, and expected outcomes..."
@@ -83,9 +87,9 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Research Area</label>
+                        <label class="form-label fw-semibold">Ερευνητικό Πεδίο</label>
                         <select class="form-select" @bind="_form.Area">
-                            <option value="">- Select area -</option>
+                            <option value="">- Επιλέξτε πεδίο -</option>
                             @foreach (var area in ResearchAreas)
                             {
                                 <option value="@area">@area</option>
@@ -94,10 +98,10 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Supervising Professor <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Επιβλέπων Καθηγητής <span class="text-danger">*</span></label>
                         <select class="form-select @(_formErrors.ContainsKey("SupervisingProfessor") ? "is-invalid" : "")"
                                 @bind="_form.SupervisingProfessor">
-                            <option value="">- Select professor -</option>
+                            <option value="">- Επιλέξτε καθηγητή -</option>
                             @foreach (var opt in _professorOptions)
                             {
                                 <option value="@opt.DisplayName">@opt.DisplayName</option>
@@ -110,14 +114,14 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Prerequisites</label>
+                        <label class="form-label fw-semibold">Προαπαιτούμενα</label>
                         <input class="form-control"
                                placeholder="e.g. Linear Algebra, Python"
                                @bind="_form.Prerequisites" />
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Max Students</label>
+                        <label class="form-label fw-semibold">Μέγιστος Αριθμός Φοιτητών</label>
                         <input type="number" min="1" max="10" class="form-control" @bind="_form.MaxStudents" />
                     </div>
                 </div>
@@ -125,12 +129,12 @@
                 <div class="d-flex gap-2 mt-4">
                     <button class="btn btn-primary" @onclick="SubmitForm">
                         <span class="bi bi-save me-1"></span>
-                        @(_editingId.HasValue ? "Save Changes" : "Save as Draft")
+                        @(_editingId.HasValue ? "Αποθήκευση Αλλαγών" : "Αποθήκευση ως Πρόχειρο")
                     </button>
                     @if (!_editingId.HasValue && Session.Role == UserRole.Professor)
                     {
                         <button class="btn btn-outline-success" @onclick="SaveAndOpen">
-                            <span class="bi bi-unlock me-1"></span> Save as Open
+                            <span class="bi bi-unlock me-1"></span> Αποθήκευση ως Ανοιχτό
                         </button>
                     }
                 </div>
@@ -142,32 +146,32 @@
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-lg-4">
-                    <label class="form-label small fw-semibold text-uppercase text-muted">Search</label>
+                    <label class="form-label small fw-semibold text-uppercase text-muted">Αναζήτηση</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0">
                             <span class="bi bi-search text-muted"></span>
                         </span>
                         <input class="form-control border-start-0"
-                               placeholder="Title, keyword, professor..."
+                               placeholder="Τίτλος, λέξη-κλειδί, καθηγητής..."
                                @bind="_searchText" @bind:event="oninput" />
                     </div>
                 </div>
 
                 <div class="col-lg-2 col-md-4">
-                    <label class="form-label small fw-semibold text-uppercase text-muted">Status</label>
+                    <label class="form-label small fw-semibold text-uppercase text-muted">Κατάσταση</label>
                     <select class="form-select" @bind="_filterStatus">
-                        <option value="">All statuses</option>
+                        <option value="">Όλες οι καταστάσεις</option>
                         @foreach (var s in TopicStatuses)
                         {
-                            <option value="@s">@s</option>
+                            <option value="@s">@DisplayTopicStatus(s)</option>
                         }
                     </select>
                 </div>
 
                 <div class="col-lg-2 col-md-4">
-                    <label class="form-label small fw-semibold text-uppercase text-muted">Area</label>
+                    <label class="form-label small fw-semibold text-uppercase text-muted">Πεδίο</label>
                     <select class="form-select" @bind="_filterArea">
-                        <option value="">All areas</option>
+                        <option value="">Όλα τα πεδία</option>
                         @foreach (var a in ResearchAreas)
                         {
                             <option value="@a">@a</option>
@@ -177,7 +181,7 @@
 
                 <div class="col-lg-4 col-md-4 text-md-end">
                     <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters">
-                        <span class="bi bi-x-circle me-1"></span> Clear
+                        <span class="bi bi-x-circle me-1"></span> Εκκαθάριση
                     </button>
                 </div>
             </div>
@@ -186,15 +190,15 @@
 
     <div class="d-flex align-items-center justify-content-between mb-3">
         <span class="text-muted small">
-            Showing <strong>@FilteredTopics.Count()</strong> of <strong>@_topics.Count</strong> topics
+            Showing <strong>@FilteredTopics.Count()</strong> από <strong>@_topics.Count</strong> θέματα
         </span>
         <div class="d-flex gap-2 align-items-center">
-            <span class="small text-muted">Sort:</span>
+            <span class="small text-muted">Ταξινόμηση:</span>
             <select class="form-select form-select-sm" style="width:auto;" @bind="_sortOrder">
-                <option value="Newest">Newest first</option>
-                <option value="Oldest">Oldest first</option>
-                <option value="Title">Title A-Z</option>
-                <option value="Status">Status</option>
+                <option value="Newest">Νεότερα πρώτα</option>
+                <option value="Oldest">Παλαιότερα πρώτα</option>
+                <option value="Title">Τίτλος Α-Ω</option>
+                <option value="Status">Κατάσταση</option>
             </select>
         </div>
     </div>
@@ -222,7 +226,7 @@
                         <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
                             <div class="flex-fill">
                                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                    <span class="@StatusBadgeClass(topic.Status)">@topic.Status</span>
+                                    <span class="@StatusBadgeClass(topic.Status)">@DisplayTopicStatus(topic.Status)</span>
                                     @if (!string.IsNullOrWhiteSpace(topic.Area))
                                     {
                                         <span class="badge bg-light text-dark border">@topic.Area</span>
@@ -241,7 +245,7 @@
                                 {
                                     <p class="mb-2 small">
                                         <span class="bi bi-journal-check me-1 text-muted"></span>
-                                        <strong>Prerequisites:</strong> @topic.Prerequisites
+                                        <strong>Προαπαιτούμενα:</strong> @topic.Prerequisites
                                     </p>
                                 }
 
@@ -254,17 +258,17 @@
                                 {
                                     <p class="mb-2 small text-muted">
                                         <span class="bi bi-person-check me-1"></span>
-                                        <strong>Assigned Student:</strong> @topic.AssignedStudentAccount
+                                        <strong>Ανατεθείς Φοιτητής:</strong> @topic.AssignedStudentAccount
                                     </p>
                                 }
 
                                 @if (Session.Role == UserRole.Professor && IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Open)
                                 {
                                     <div class="mt-3">
-                                        <p class="mb-2 small text-muted fw-semibold text-uppercase">Interested students</p>
+                                        <p class="mb-2 small text-muted fw-semibold text-uppercase">Ενδιαφερόμενοι φοιτητές</p>
                                         @if (topic.InterestedStudents.Count == 0)
                                         {
-                                            <p class="mb-0 small text-muted">No student interest yet.</p>
+                                            <p class="mb-0 small text-muted">Δεν υπάρχει ακόμη ενδιαφέρον.</p>
                                         }
                                         else
                                         {
@@ -277,7 +281,7 @@
                                                         <button class="btn btn-outline-primary btn-sm"
                                                                 @onclick="() => AssignInterestedStudentAsync(topic.Id, interest.StudentEmail)"
                                                                 disabled="@_topicActionInProgressIds.Contains(topic.Id)">
-                                                            <span class="bi bi-person-check me-1"></span> Assign Student
+                                                            <span class="bi bi-person-check me-1"></span> Ανάθεση Φοιτητή
                                                         </button>
                                                     </div>
                                                 }
@@ -285,17 +289,17 @@
                                         }
 
                                         <div class="mt-3 pt-3 border-top">
-                                            <p class="mb-2 small text-muted fw-semibold text-uppercase">Direct assign</p>
+                                            <p class="mb-2 small text-muted fw-semibold text-uppercase">Άμεση Ανάθεση</p>
                                             <div class="d-flex gap-2 align-items-center">
                                                 <input class="form-control form-control-sm"
-                                                       placeholder="Student email address..."
+                                                       placeholder="Διεύθυνση ηλεκτρονικού φοιτητή..."
                                                        value="@(_directAssignEmails.GetValueOrDefault(topic.Id, string.Empty))"
                                                        @oninput="args => _directAssignEmails[topic.Id] = args.Value?.ToString() ?? string.Empty"
                                                        disabled="@_topicActionInProgressIds.Contains(topic.Id)" />
                                                 <button class="btn btn-outline-primary btn-sm flex-shrink-0"
                                                         @onclick="() => DirectAssignStudentAsync(topic.Id)"
                                                         disabled="@_topicActionInProgressIds.Contains(topic.Id)">
-                                                    <span class="bi bi-person-check me-1"></span> Assign
+                                                    <span class="bi bi-person-check me-1"></span> Ανάθεση
                                                 </button>
                                             </div>
                                         </div>
@@ -303,7 +307,7 @@
                                 }
 
                                 <span class="small text-muted">
-                                    <span class="bi bi-people me-1"></span>Max @topic.MaxStudents student@(topic.MaxStudents != 1 ? "s" : "")
+                                    <span class="bi bi-people me-1"></span>Μέγ. @topic.MaxStudents φοιτητής(@(topic.MaxStudents != 1 ? "ς" : ""))
                                 </span>
                             </div>
 
@@ -313,22 +317,22 @@
                                     @if (IsCurrentProfessorInCharge(topic) && (topic.Status == TopicStatus.Draft || topic.Status == TopicStatus.Open))
                                     {
                                         <button class="btn btn-outline-primary btn-sm" @onclick="() => EditTopic(topic)">
-                                            <span class="bi bi-pencil me-1"></span> Edit
+                                            <span class="bi bi-pencil me-1"></span> Επεξεργασία
                                         </button>
                                     }
                                     @if (IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Draft)
                                     {
                                         <button class="btn btn-success btn-sm" @onclick="() => PublishTopic(topic.Id)">
-                                            <span class="bi bi-unlock me-1"></span> Publish Open
+                                            <span class="bi bi-unlock me-1"></span> Δημοσίευση Ανοιχτά
                                         </button>
                                         <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteDraft(topic.Id)">
-                                            <span class="bi bi-trash me-1"></span> Delete
+                                            <span class="bi bi-trash me-1"></span> Διαγραφή
                                         </button>
                                     }
                                     @if (IsCurrentProfessorInCharge(topic) && (topic.Status == TopicStatus.Open || topic.Status == TopicStatus.Ongoing))
                                     {
                                         <button class="btn btn-outline-secondary btn-sm" @onclick="() => ArchiveTopic(topic.Id)">
-                                            <span class="bi bi-archive me-1"></span> Archive
+                                            <span class="bi bi-archive me-1"></span> Αρχειοθέτηση
                                         </button>
                                     }
                                     @if (IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Open)
@@ -336,7 +340,7 @@
                                         <button class="btn btn-outline-danger btn-sm"
                                                 @onclick="() => DeleteOpenTopicAsync(topic.Id)"
                                                 disabled="@_topicActionInProgressIds.Contains(topic.Id)">
-                                            <span class="bi bi-trash me-1"></span> Delete
+                                            <span class="bi bi-trash me-1"></span> Διαγραφή
                                         </button>
                                     }
                                     @if (IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Ongoing)
@@ -344,7 +348,7 @@
                                         <button class="btn btn-outline-danger btn-sm"
                                                 @onclick="() => RemoveAssignedStudentAsync(topic.Id)"
                                                 disabled="@_topicActionInProgressIds.Contains(topic.Id)">
-                                            <span class="bi bi-person-x me-1"></span> Remove Student
+                                            <span class="bi bi-person-x me-1"></span> Αφαίρεση Φοιτητή
                                         </button>
                                     }
                                 }
@@ -352,20 +356,33 @@
                                 {
                                     @if (topic.Status == TopicStatus.Open)
                                     {
-                                        <button class="btn btn-outline-success btn-sm" @onclick="() => ExpressInterestAsync(topic.Id)" disabled="@_topicActionInProgressIds.Contains(topic.Id) || HasCurrentStudentExpressedInterest(topic)">
-                                            <span class="bi bi-heart me-1"></span> Express Interest
-                                        </button>
-                                    }
-                                    @if (topic.Status == TopicStatus.Open && HasCurrentStudentExpressedInterest(topic))
-                                    {
-                                        <button class="btn btn-success btn-sm" disabled>
-                                            <span class="bi bi-heart-fill me-1"></span> Interest Registered
-                                        </button>
+                                        @if (HasCurrentStudentExpressedInterest(topic))
+                                        {
+                                            <button class="btn btn-success btn-sm" disabled>
+                                                <span class="bi bi-heart-fill me-1"></span> Ενδιαφέρον Καταχωρήθηκε
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-outline-success btn-sm"
+                                                    @onclick="() => ExpressInterestAsync(topic.Id)"
+                                                    disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                                @if (_topicActionInProgressIds.Contains(topic.Id))
+                                                {
+                                                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="bi bi-heart me-1"></span>
+                                                }
+                                                Εκδήλωση Ενδιαφέροντος
+                                            </button>
+                                        }
                                     }
                                     @if (topic.Status == TopicStatus.Ongoing && IsCurrentStudentAssigned(topic))
                                     {
                                         <button class="btn btn-success btn-sm" disabled>
-                                            <span class="bi bi-check-circle me-1"></span> Assigned to You
+                                            <span class="bi bi-check-circle me-1"></span> Ανατέθηκε σε Εσάς
                                         </button>
                                     }
                                 }
@@ -398,6 +415,15 @@
         TopicStatus.Open,
         TopicStatus.Ongoing,
         TopicStatus.Archived,
+    };
+
+    private static string DisplayTopicStatus(string status) => status switch
+    {
+        TopicStatus.Draft    => "Πρόχειρο",
+        TopicStatus.Open     => "Ανοιχτό",
+        TopicStatus.Ongoing  => "Εν Εξελίξει",
+        TopicStatus.Archived => "Αρχειοθετημένο",
+        _                    => status,
     };
 
     private static readonly string[] ResearchAreas =
@@ -708,6 +734,11 @@
 
     private void OpenProposalForm()
     {
+        if (Session.Role != UserRole.Professor)
+        {
+            return;
+        }
+
         _form.Clear();
         _editingId = null;
         _formErrors.Clear();
@@ -923,7 +954,7 @@
 
         if (HasCurrentStudentExpressedInterest(topic))
         {
-            _successMessage = $"Your interest in '{topic.Title}' is already registered.";
+            _successMessage = $"Το ενδιαφέρον σας για το θέμα '{topic.Title}' έχει ήδη καταχωρηθεί.";
             _errorMessage = null;
             return;
         }
@@ -939,14 +970,19 @@
 
             if (!recorded)
             {
-                _errorMessage = "Unable to register your interest.";
+                _errorMessage = "Δεν ήταν δυνατή η καταχώρηση του ενδιαφέροντός σας. Δοκιμάστε ξανά.";
                 _successMessage = null;
                 return;
             }
 
             await ApplyPersistedStateAsync();
 
-            _successMessage = $"Your interest in '{topic.Title}' has been sent to {topic.SupervisingProfessor}.";
+            await NotifService.AddAsync(
+                topic.SupervisingProfessorAccount,
+                Session.UserName!,
+                topic.Title);
+
+            _successMessage = $"Το ενδιαφέρον σας για το θέμα '{topic.Title}' εστάλη στον {topic.SupervisingProfessor}.";
             _errorMessage = null;
         }
         finally

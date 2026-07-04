@@ -5,13 +5,14 @@
 @inject UserSessionService Session
 @inject NavigationManager Nav
 @inject University.Infrastructure.Data.UniversityDbContext Db
+@inject IThesisNotificationService NotifService
 
 @if (!_sessionReady)
 {
     <div class="container page-section">
         <div class="card info-card">
             <div class="card-body">
-                <p class="mb-0 text-muted">Loading...</p>
+                <p class="mb-0 text-muted">Φόρτωση...</p>
             </div>
         </div>
     </div>
@@ -21,13 +22,13 @@ else if (Session.Role == UserRole.Professor)
 <div class="container page-section">
     <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
         <div>
-            <span class="highlight-tag mb-2"><span class="bi bi-mortarboard-fill"></span> Professor Home</span>
-            <h1 class="section-heading mb-2">Welcome to Thesis Collaboration</h1>
-            <p class="text-muted mb-0">Quickly review priorities, manage topics, and coordinate meetings with students.</p>
+            <span class="highlight-tag mb-2"><span class="bi bi-mortarboard-fill"></span> Αρχική Καθηγητή</span>
+            <h1 class="section-heading mb-2">Καλώς ήρθατε στη Συνεργασία Διπλωματικών</h1>
+            <p class="text-muted mb-0">Επισκεφθείτε τις προτεραιότητες, διαχειριστείτε θέματα και συντονίστε συναντήσεις με φοιτητές.</p>
         </div>
         <div class="d-flex gap-2 mt-3 mt-lg-0">
-            <NavLink class="btn btn-primary" href="thesis-topics">Manage Topics</NavLink>
-            <NavLink class="btn btn-outline-secondary" href="meetings">Upcoming Meetings</NavLink>
+            <NavLink class="btn btn-primary" href="thesis-topics">Διαχείριση Θεμάτων</NavLink>
+            <NavLink class="btn btn-outline-secondary" href="meetings">Επερχόμενες Συναντήσεις</NavLink>
         </div>
     </div>
 
@@ -36,34 +37,28 @@ else if (Session.Role == UserRole.Professor)
         {
             <div class="col-12">
                 <div class="card info-card">
-                    <div class="card-body text-muted">Loading metrics...</div>
+                    <div class="card-body text-muted">Φόρτωση μετρικών...</div>
                 </div>
             </div>
         }
         else
         {
-            <div class="col-md-3 col-6">
+            <div class="col-md-4 col-6">
                 <div class="metric-card">
                     <div class="metric-value">@_activeSupervisions</div>
-                    <div class="metric-label">Active Supervisions</div>
+                    <div class="metric-label">Ενεργές Διπλωματικές</div>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
+            <div class="col-md-4 col-6">
                 <div class="metric-card">
                     <div class="metric-value">@_pendingReviews</div>
-                    <div class="metric-label">Pending Reviews</div>
+                    <div class="metric-label">Εκκρεμείς Αξιολογήσεις</div>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
+            <div class="col-md-4 col-6">
                 <div class="metric-card">
                     <div class="metric-value">@_upcomingMeetings</div>
-                    <div class="metric-label">Upcoming Meetings</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="metric-card">
-                    <div class="metric-value">@_reservationRequests</div>
-                    <div class="metric-label">Reservation Requests</div>
+                    <div class="metric-label">Επερχόμενες Συναντήσεις</div>
                 </div>
             </div>
         }
@@ -73,24 +68,66 @@ else if (Session.Role == UserRole.Professor)
         <div class="col-lg-6">
             <div class="card info-card h-100">
                 <div class="card-body">
-                    <h2 class="h5 fw-semibold mb-3">Today</h2>
-                    <p class="mb-0 text-muted">No tasks today.</p>
+                    <h2 class="h5 fw-semibold mb-3">Σήμερα</h2>
+                    <p class="mb-0 text-muted">Δεν υπάρχουν εργασίες σήμερα.</p>
                 </div>
             </div>
         </div>
         <div class="col-lg-6">
             <div class="card info-card h-100">
                 <div class="card-body">
-                    <h2 class="h5 fw-semibold mb-3">Quick Navigation</h2>
+                    <h2 class="h5 fw-semibold mb-3">Γρήγορη Πλοήγηση</h2>
                     <div class="d-flex flex-column gap-2">
-                        <NavLink class="btn btn-outline-primary text-start" href="thesis-topics">Thesis Topics</NavLink>
-                        <NavLink class="btn btn-outline-primary text-start" href="updates">Thesis Updates</NavLink>
-                        <NavLink class="btn btn-outline-primary text-start" href="meetings">Meetings Calendar</NavLink>
+                        <NavLink class="btn btn-outline-primary text-start" href="thesis-topics">Θέματα Διπλωματικής</NavLink>
+                        <NavLink class="btn btn-outline-primary text-start" href="updates">Ενημερώσεις</NavLink>
+                        <NavLink class="btn btn-outline-primary text-start" href="meetings">Ημερολόγιο Συναντήσεων</NavLink>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    @if (_notifications.Count > 0)
+    {
+        <div class="row g-4 mt-0">
+            <div class="col-12">
+                <div class="card info-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="h5 fw-semibold mb-0">
+                                <span class="bi bi-bell-fill me-2 text-warning"></span>Εκδηλώσεις Ενδιαφέροντος
+                                @if (_notifications.Any(n => !n.IsRead))
+                                {
+                                    <span class="badge bg-danger ms-2">@_notifications.Count(n => !n.IsRead) νέα</span>
+                                }
+                            </h2>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="MarkAllReadAsync">Σήμανση ως αναγνωσμένα</button>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            @foreach (var n in _notifications.Take(10))
+                            {
+                                <li class="list-group-item px-0 @(!n.IsRead ? "fw-semibold" : "")">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div>
+                                            @if (!n.IsRead)
+                                            {
+                                                <span class="badge bg-warning text-dark me-2">Νέο</span>
+                                            }
+                                            <span class="bi bi-person-fill me-1 text-muted"></span>
+                                            <span>@n.StudentEmail</span>
+                                            <span class="text-muted ms-1">εκδήλωσε ενδιαφέρον για το θέμα</span>
+                                            <strong class="ms-1">&ldquo;@n.TopicTitle&rdquo;</strong>
+                                        </div>
+                                        <small class="text-muted text-nowrap">@n.At.ToLocalTime().ToString("dd/MM HH:mm")</small>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 }
 
@@ -100,7 +137,7 @@ else if (Session.Role == UserRole.Professor)
     private int _activeSupervisions;
     private int _pendingReviews;
     private int _upcomingMeetings;
-    private int _reservationRequests;
+    private List<ThesisInterestNotification> _notifications = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -167,11 +204,18 @@ else if (Session.Role == UserRole.Professor)
             .CountAsync(tu => supervisedStudentIds.Contains(tu.StudentId)
                               && tu.Status == UpdateStatus.Submitted);
 
-        // No Meetings or ReservationRequests tables in domain model yet.
+        // No Meetings table in domain model yet.
         _upcomingMeetings = 0;
-        _reservationRequests = 0;
+
+        _notifications = (await NotifService.GetForProfessorAsync(Session.UserName!)).ToList();
 
         _isLoadingMetrics = false;
+    }
+
+    private async Task MarkAllReadAsync()
+    {
+        await NotifService.MarkAllReadAsync(Session.UserName!);
+        _notifications = (await NotifService.GetForProfessorAsync(Session.UserName!)).ToList();
     }
 }
 
