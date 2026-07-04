@@ -953,14 +953,14 @@ a:focus {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.7) !important;
     padding: 0.25rem;
-    text-decoration: none;
+    text-decoration: none !important;
     transition: color 0.15s;
 }
 
 .nav-bell:hover {
-    color: #fff;
+    color: #fff !important;
 }
 
 .nav-bell-badge {
