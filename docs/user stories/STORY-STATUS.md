@@ -14,7 +14,7 @@ This matrix aligns user story docs with the current codebase and implementation 
 | US-013 | Establish CQRS and Validation Foundation | Backend | Partially Implemented | Medium | MediatR usage exists; full cross-solution behavior/validation conventions need explicit closure. |
 | US-020 | Deliver Thesis Update Timeline | UI | Partially Implemented | High | Thesis updates page and timeline behavior exist; full AC closure pending. |
 | US-021 | Implement Attachment Storage Pipeline | Backend | Planned | High | Attachment pipeline not present as completed feature. |
-| US-022 | Enable Professor Feedback Loop and Notifications | UI | Planned | High | Notification + audit scope not implemented end-to-end. |
+| US-022 | Enable Professor Feedback Loop and Notifications | UI | In Progress | High | Branch: `feature/us-022-professor-feedback-loop`. Feedback entity + DB table exist. Gap: `ApplyProfessorReviewAsync` is in-memory only. Story: `docs/planning-artifacts/stories/STORY-US-022.md`. |
 | US-030 | Build Meeting Scheduling Workflow | UI | Partially Implemented | Medium | Current implementation is Google Calendar-first; custom scheduling workflow scope changed. |
 | US-031 | Provide Calendar Integration and ICS Export | Integration | Planned | High | Calendar embed exists; ICS/OAuth sync workflow not yet delivered. |
 | US-032 | Track Meeting Action Items with Live Updates | UI | Needs Verification | Medium | Historical notes exist in story file; current repo structure does not confirm full feature presence. |

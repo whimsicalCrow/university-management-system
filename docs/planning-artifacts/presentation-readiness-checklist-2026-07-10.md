@@ -22,7 +22,7 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 |---|---|---|---|---:|---|---|---|---|
 | PR-01 | Scope | Freeze presentation scope and non-goals | Hermes | 1 | 2026-07-02 | done | None | Scope note committed in docs |
 | PR-02 | Core Feature | Complete US-021 attachment persistence end-to-end | Hermes | 6 | 2026-07-03 | done | None | Upload + retrieve demo + tests |
-| PR-03 | Core Feature | Complete US-022 feedback loop visibility | Hermes | 5 | 2026-07-04 | not-started | None | Professor feedback visible to student |
+| PR-03 | Core Feature | Complete US-022 feedback loop visibility | Hermes | 5 | 2026-07-04 | in-progress | None | Professor feedback visible to student |
 | PR-04 | UX Hardening | Fix critical UI states for demo path (errors, empty states, role nav) | Hermes | 4 | 2026-07-05 | in-progress | None | Manual test checklist signed |
 | PR-05 | Reliability | Create clean startup/run script and verify from fresh terminal | Hermes | 2 | 2026-07-06 | in-progress | None | Successful clean run commands |
 | PR-06 | Security | Run OWASP-focused checks and patch high-severity findings | Hermes | 4 | 2026-07-07 | not-started | None | Security findings table |
@@ -46,6 +46,7 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 ### 2026-07-04
 - [ ] PR-03 feedback loop complete.
 - [ ] Verify professor feedback persistence and student visibility.
+- [ ] Branch: `feature/us-022-professor-feedback-loop` | Story: `docs/planning-artifacts/stories/STORY-US-022.md`
 - [ ] Add minimal notification/audit indicator if missing.
 
 ### 2026-07-05
