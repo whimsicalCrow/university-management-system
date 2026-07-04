@@ -35,6 +35,13 @@ builder.Services
     .AddEntityFrameworkStores<UniversityDbContext>()
     .AddDefaultTokenProviders();
 
+// SEC-04: configure Identity cookie to redirect unauthenticated requests to the
+// custom Blazor login page instead of the default /Account/Login scaffold path.
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/login";
+});
+
 // Add Authorization
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("StudentOnly", policy => policy.RequireRole("Student"))

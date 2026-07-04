@@ -25,7 +25,7 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 | PR-03 | Core Feature | Complete US-022 feedback loop visibility | Hermes | 5 | 2026-07-04 | done | None | Professor feedback visible to student |
 | PR-04 | UX Hardening | Fix critical UI states for demo path (errors, empty states, role nav) | Hermes | 4 | 2026-07-05 | done | None | Manual test checklist signed |
 | PR-05 | Reliability | Create clean startup/run script and verify from fresh terminal | Hermes | 2 | 2026-07-06 | done | None | Successful clean run commands |
-| PR-06 | Security | Run OWASP-focused checks and patch high-severity findings | Hermes | 4 | 2026-07-07 | not-started | None | Security findings table |
+| PR-06 | Security | Run OWASP-focused checks and patch high-severity findings | Hermes | 4 | 2026-07-07 | done | None | Security findings table |
 | PR-07 | Performance | Execute load tests on critical paths and capture metrics | Hermes | 4 | 2026-07-08 | not-started | None | Response time and error-rate report |
 | PR-08 | Presentation | Build final deck, demo script, backup script, and fallback screenshots | Hermes | 5 | 2026-07-09 | not-started | None | Deck + runbook + backup assets |
 | PR-09 | Dress Rehearsal | Run full demo twice under timed conditions | Hermes | 2 | 2026-07-09 | not-started | None | Timing log and issue list |
@@ -64,9 +64,9 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 - [x] Confirm build -> run -> demo flow works from clean terminal.
 
 ### 2026-07-07
-- [ ] PR-06 security pass complete.
-- [ ] Patch high-priority vulnerabilities.
-- [ ] Document accepted residual risks.
+- [x] PR-06 security pass complete.
+- [x] Patch high-priority vulnerabilities.
+- [x] Document accepted residual risks.
 
 ### 2026-07-08
 - [ ] PR-07 performance pass complete.
@@ -103,7 +103,7 @@ All must be true:
 - 2026-07-04: PR-03 complete — US-022 professor feedback loop persistence implemented and merged as PR #15 on `feature/us-022-professor-feedback-loop`. All 5 ACs verified (SubmitReviewCommand, status transitions, DB-backed timeline, persisted feedback in student view, tests). 97/97 tests pass (82 unit + 15 integration). EF Core migration `20260704142321_AddThesisTitleAndArtifactLink` applied. SeedSampleData removed; in-memory `_store` replaced with `ThesisTimelineService`.
 - 2026-07-04: PR-04 complete — UX hardening merged as PR #16 (commit `2daf7d9`). Professor topic dropdown populated from DB; real ΕΚΠΑ faculty (33 professors); Open-topic deletion; ThesisUpdates else-block Razor bug fixed; Home NavigationException fixed (moved redirect to OnAfterRender); FileLibrary feature removed. Test suite stabilised at 97 tests (82 unit + 15 integration).
 - 2026-07-04: PR-05 complete — `scripts/start-demo.ps1` created on branch `feature/pr-05-startup-script`. Script covers: `dotnet restore` → `dotnet build -c Release` (all 6 projects clean) → port 5118 conflict check (prints PID + kill command on conflict) → credential/URL banner → `dotnet run --launch-profile http --no-build`. Verified: `Invoke-WebRequest http://localhost:5118/login` returned HTTP 200 from a clean run.
-- Security report path: fill on 2026-07-07.
+- 2026-07-04: PR-06 complete — OWASP security pass on branch `feature/pr-06-security-pass`. 4 HIGH findings patched: SEC-01 stored XSS (Markdig `.DisableHtml()`), SEC-02 role escalation via `?role=supervisor` (removed query param; `IsSupervisorView` from session only), SEC-03 IDOR via `?authorId=N` (gated on `IsSupervisorView`), SEC-04 missing `@attribute [Authorize]` on 5 pages + `ConfigureApplicationCookie(LoginPath="/login")`. 4 MEDIUM findings accepted (headers, antiforgery-disable, NoOp virus scan, dev password). 97/97 tests pass.
 - Performance report path: fill on 2026-07-08.
 - Deck and runbook path: fill on 2026-07-09.
 
