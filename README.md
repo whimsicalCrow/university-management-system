@@ -1,6 +1,6 @@
 # University Management System
 
-A thesis-collaboration platform built with Clean Architecture on .NET 10, Blazor Server, CQRS (MediatR), EF Core, and ASP.NET Core Identity. Students and professors manage thesis topics, progress updates, file attachments, and feedback through a fully database-backed workflow.
+A thesis-collaboration platform built with Clean Architecture on .NET 10, Blazor Server, CQRS (MediatR), EF Core, and ASP.NET Core Identity.
 
 ## Features
 
@@ -82,35 +82,10 @@ Server=127.0.0.1,1433;Database=UniversityDB;User Id=sa;Password=YourStrong!Passw
 
 Accounts are seeded automatically on first run. **Password for all accounts: `TempPass123!`**
 
-**Professors** (Role: `Professor`) — ΤΜΗΜΑ ΗΜΜΥ, Πανεπιστήμιο Πελοποννήσου
+- 5 professors: `prof1@univ.edu` – `prof5@univ.edu` (Role: `Professor`)
+- 15 students: `student1@univ.edu` – `student15@univ.edu` (Role: `Student`)
 
-| Email | Full Name | Βαθμίδα | Γνωστικό Αντικείμενο |
-|-------|-----------|---------|----------------------|
-| `prof1@univ.edu` | Χριστοδούλου Σωτήριος | Επίκ. Καθηγητής | Τεχνολογία Λογισμικού για τον Παγκόσμιο Ιστό |
-| `prof2@univ.edu` | Πετρέλλης Νικόλαος | Αναπλ. Καθηγητής | Ενσωματωμένα Συστήματα |
-| `prof3@univ.edu` | Χαραλαμπάκος Βασίλειος | Επίκ. Καθηγητής | Ηλεκτρικά Συστήματα Ενέργειας |
-| `prof4@univ.edu` | Κούτρας Αθανάσιος | Αναπλ. Καθηγητής | Ψηφιακή Επεξεργασία Ήχου και Εικόνας |
-| `prof5@univ.edu` | Τζήμας Ιωάννης | Αναπλ. Καθηγητής | Δικτυοκεντρικά Πληροφοριακά Συστήματα |
-
-**Students** (Role: `Student`)
-
-| Email | Specialization | Supervisor |
-|-------|---------------|------------|
-| `student1@univ.edu` | Ηλεκτρονικής, Υπολογιστών και Συστημάτων | prof1 |
-| `student2@univ.edu` | Πληροφορικής | prof1 |
-| `student3@univ.edu` | Σημάτων, Τηλεπικοινωνιών και Δικτύων | prof1 |
-| `student4@univ.edu` | Πληροφορικής | prof2 |
-| `student5@univ.edu` | Ενεργειακών Συστημάτων | prof2 |
-| `student6@univ.edu` | Σημάτων, Τηλεπικοινωνιών και Δικτύων | prof2 |
-| `student7@univ.edu` | Ηλεκτρονικής, Υπολογιστών και Συστημάτων | prof3 |
-| `student8@univ.edu` | Σημάτων, Τηλεπικοινωνιών και Δικτύων | prof3 |
-| `student9@univ.edu` | Ενεργειακών Συστημάτων | prof3 |
-| `student10@univ.edu` | Πληροφορικής | prof4 |
-| `student11@univ.edu` | Ηλεκτρονικής, Υπολογιστών και Συστημάτων | prof4 |
-| `student12@univ.edu` | Ενεργειακών Συστημάτων | prof4 |
-| `student13@univ.edu` | Σημάτων, Τηλεπικοινωνιών και Δικτύων | prof5 |
-| `student14@univ.edu` | Πληροφορικής | prof5 |
-| `student15@univ.edu` | Ηλεκτρονικής, Υπολογιστών και Συστημάτων | prof5 |
+See [docs/demo-users.md](docs/demo-users.md) for full names, research areas, and student specializations.
 
 ### Attachment storage
 
@@ -121,19 +96,11 @@ Accounts are seeded automatically on first run. **Password for all accounts: `Te
 | `Attachments:MaxFileSizeBytes` | `20971520` | 20 MB upload limit |
 | `Attachments:AllowedExtensions` | `.pdf .docx .pptx .zip` | Blocked types rejected at upload |
 
-## Tests
-
-```powershell
-dotnet test UniversitySystem.sln
-# Expected: 97 tests, 0 failures (82 unit + 15 integration)
-```
-
 ## CI/CD
 
-GitHub Actions (`.github/workflows/ci-cd.yml`) runs on push and pull requests to `main`:
+Builds run via Azure DevOps (`pipeline-cd.yaml`): restore → build → test → SonarQube → Docker publish → deploy to Azure Container Apps.
 
-1. **build-test** — restore → build → test
-2. **docker** — builds and pushes the image to Docker Hub when `DOCKER_USERNAME` and `DOCKER_PASSWORD` secrets are configured
+> GitHub Actions (`.github/workflows/`) is not yet configured.
 
 ## Kubernetes
 
@@ -141,3 +108,19 @@ GitHub Actions (`.github/workflows/ci-cd.yml`) runs on push and pull requests to
 # After pushing your image, update k8s/deployment.yaml with your image tag, then:
 kubectl apply -f k8s/
 ```
+
+```powershell
+dotnet test UniversitySystem.sln
+# Expected: 97 tests, 0 failures (82 unit + 15 integration)
+```
+
+## Configuration reference
+
+### Attachment storage
+
+| Setting | Value | Effect |
+|---|---|---|
+| `Attachments:StorageProvider` | `Local` (default) | Saves files under `wwwroot/attachments/` |
+| `Attachments:StorageProvider` | `AzureBlob` | Uses `AzureBlobAttachmentStorageService` |
+| `Attachments:MaxFileSizeBytes` | `20971520` | 20 MB upload limit |
+| `Attachments:AllowedExtensions` | `.pdf .docx .pptx .zip` | Blocked types rejected at upload |
