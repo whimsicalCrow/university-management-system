@@ -164,7 +164,7 @@ app.MapGet("/culture", (string culture, string redirectUri, HttpContext ctx) =>
 | Login | Email | Email |
 | Login | Password | Κωδικός |
 | Login | Sign In | Σύνδεση |
-| Home | Welcome to Thesis Collaboration | Καλώς ήρθατε στη Συνεργασία Διπλωματικών |
+| Home | Welcome to Thesis Collaboration | Καλώς ήρθατε στο Σύστημα Διαχείρισης Διπλωματικών Εργασιών |
 | Home | Active Supervisions | Ενεργές Επιβλέψεις |
 | Home | Pending Reviews | Εκκρεμείς Αξιολογήσεις |
 | Home | Upcoming Meetings | Επερχόμενες Συναντήσεις |
