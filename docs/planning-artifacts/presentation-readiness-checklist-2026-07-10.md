@@ -22,9 +22,9 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 |---|---|---|---|---:|---|---|---|---|
 | PR-01 | Scope | Freeze presentation scope and non-goals | Hermes | 1 | 2026-07-02 | done | None | Scope note committed in docs |
 | PR-02 | Core Feature | Complete US-021 attachment persistence end-to-end | Hermes | 6 | 2026-07-03 | done | None | Upload + retrieve demo + tests |
-| PR-03 | Core Feature | Complete US-022 feedback loop visibility | Hermes | 5 | 2026-07-04 | in-progress | None | Professor feedback visible to student |
-| PR-04 | UX Hardening | Fix critical UI states for demo path (errors, empty states, role nav) | Hermes | 4 | 2026-07-05 | in-progress | None | Manual test checklist signed |
-| PR-05 | Reliability | Create clean startup/run script and verify from fresh terminal | Hermes | 2 | 2026-07-06 | in-progress | None | Successful clean run commands |
+| PR-03 | Core Feature | Complete US-022 feedback loop visibility | Hermes | 5 | 2026-07-04 | done | None | Professor feedback visible to student |
+| PR-04 | UX Hardening | Fix critical UI states for demo path (errors, empty states, role nav) | Hermes | 4 | 2026-07-05 | done | None | Manual test checklist signed |
+| PR-05 | Reliability | Create clean startup/run script and verify from fresh terminal | Hermes | 2 | 2026-07-06 | not-started | None | Successful clean run commands |
 | PR-06 | Security | Run OWASP-focused checks and patch high-severity findings | Hermes | 4 | 2026-07-07 | not-started | None | Security findings table |
 | PR-07 | Performance | Execute load tests on critical paths and capture metrics | Hermes | 4 | 2026-07-08 | not-started | None | Response time and error-rate report |
 | PR-08 | Presentation | Build final deck, demo script, backup script, and fallback screenshots | Hermes | 5 | 2026-07-09 | not-started | None | Deck + runbook + backup assets |
@@ -43,16 +43,21 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 - [x] Verify uploaded files appear in File Library and timeline.
 - [x] Add or update tests for upload/retrieval/failure.
 
-### 2026-07-04
+### 2026-07-04 (Today)
 - [x] PR-03 feedback loop complete.
 - [x] Verify professor feedback persistence and student visibility.
 - [x] Branch: `feature/us-022-professor-feedback-loop` | Story: `docs/planning-artifacts/stories/STORY-US-022.md`
 - [x] Add minimal notification/audit indicator if missing.
+- [x] PR-04 UX hardening complete (ahead of schedule — merged same day as PR-03).
+- [x] Professor dropdown populated from DB (real faculty data).
+- [x] Professors can delete Open topics; fictional names replaced with real ΕΚΠΑ faculty.
+- [x] ThesisUpdates Razor else-block bug fixed; Home NavigationException fixed.
+- [x] FileLibrary feature removed (clean scope reduction).
 
 ### 2026-07-05
-- [ ] PR-04 UX hardening complete.
-- [ ] Fix role navigation edge cases.
-- [ ] Remove temporary debug artifacts.
+- [x] PR-04 UX hardening complete (completed 2026-07-04 — see above).
+- [x] Fix role navigation edge cases.
+- [x] Remove temporary debug artifacts.
 
 ### 2026-07-06
 - [ ] PR-05 reproducible startup workflow documented and tested.
@@ -95,6 +100,8 @@ All must be true:
 - 2026-07-02: Login UI updated and verified at `/login` (new subtitle and neutral panel).
 - 2026-07-02: Build succeeded (`University.Web.csproj`, latest task run).
 - 2026-07-03: PR-02 complete — US-021 attachment storage pipeline implemented and merged on `feature/us-021-attachment-storage-pipeline`. 87/87 tests pass (78 unit + 9 integration), 0 warnings. EF Core migration `20260703083327_AddThesisArtifactStoragePipeline` applied. 3-layer adversarial code review completed; 6 security/correctness patches applied (path traversal defence, infected-file purge, legacy token asymmetry fix, content-type fix, filename truncation fix, 404 for storage-key artifacts on old endpoint).
+- 2026-07-04: PR-03 complete — US-022 professor feedback loop persistence implemented and merged as PR #15 on `feature/us-022-professor-feedback-loop`. All 5 ACs verified (SubmitReviewCommand, status transitions, DB-backed timeline, persisted feedback in student view, tests). 97/97 tests pass (82 unit + 15 integration). EF Core migration `20260704142321_AddThesisTitleAndArtifactLink` applied. SeedSampleData removed; in-memory `_store` replaced with `ThesisTimelineService`.
+- 2026-07-04: PR-04 complete — UX hardening merged as PR #16 (commit `2daf7d9`). Professor topic dropdown populated from DB; real ΕΚΠΑ faculty (33 professors); Open-topic deletion; ThesisUpdates else-block Razor bug fixed; Home NavigationException fixed (moved redirect to OnAfterRender); FileLibrary feature removed. Test suite stabilised at 97 tests (82 unit + 15 integration).
 - Security report path: fill on 2026-07-07.
 - Performance report path: fill on 2026-07-08.
 - Deck and runbook path: fill on 2026-07-09.
