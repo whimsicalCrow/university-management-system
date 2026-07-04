@@ -1,0 +1,454 @@
+
+@code {
+    private const int AutosaveDelayMilliseconds = 2500;
+    private const long MaxAttachmentSizeBytes = 25 * 1024 * 1024;
+    private static readonly MarkdownPipeline MarkdownPipeline =
+        new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+    private enum EditorFormat
+    {
+        Heading,
+        Bold,
+        Italic,
+        UnorderedList,
+        OrderedList,
+        Quote,
+        Code,
+        Link,
+    }
+
+    private static class ThesisUpdateStatuses
+    {
+        public const string Draft       = "Draft";
+        public const string UnderReview = "Under review";
+        public const string Approved    = "Approved";
+        public static IReadOnlyList<string> All      { get; } = [Draft, UnderReview, Approved];
+        public static IReadOnlyList<string> Reviewable { get; } = [UnderReview, Approved];
+    }
+
+    private sealed record ProfessorCommentDto(int Id, string Author, string Message, DateTime CreatedOn);
+
+    private sealed record ThesisUpdateTimelineDto(
+        int Id,
+        int AuthorId,
+        string Title,
+        string Status,
+        string Note,
+        DateTime OccurredOn,
+        DateTime LastModifiedOn,
+        string? AttachmentFileName,
+        long? AttachmentSizeBytes,
+        Guid? ArtifactId,
+        IReadOnlyList<ProfessorCommentDto> ProfessorComments);
+
+    private readonly List<ThesisUpdateTimelineDto> timeline = new();
+    private static readonly IReadOnlyList<string> AvailableStatuses = ThesisUpdateStatuses.All.ToArray();
+
+    private int? resolvedStudentId;
+    private int? prevResolvedStudentId;
+    private string editorContent = string.Empty;
+    private string updateTitle = string.Empty;
+    private string previewHtml = string.Empty;
+    private string statusFilter = string.Empty;
+    private string? validationMessage;
+    private string? autosaveMessage;
+    private int? draftUpdateId;
+    private bool isSaving;
+    private CancellationTokenSource? autosaveCts;
+    private ElementReference editorRef;
+    private string? selectedAttachmentName;
+    private long? selectedAttachmentSizeBytes;
+    private IBrowserFile? selectedAttachmentFile;
+    private readonly Dictionary<int, string> professorCommentDrafts = new();
+    private readonly Dictionary<int, string> professorStatusSelections = new();
+
+    [SupplyParameterFromQuery(Name = "authorId")]
+    public int? StudentIdParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "thesisId")]
+    public Guid ThesisId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "role")]
+    public string? Role { get; set; }
+
+    private Guid ResolvedThesisId => ThesisId == Guid.Empty
+        ? Guid.Parse("11111111-1111-1111-1111-111111111111")
+        : ThesisId;
+
+    private bool IsSupervisorView =>
+        Session.Role == UserRole.Professor ||
+        string.Equals(Role, "supervisor", StringComparison.OrdinalIgnoreCase);
+
+    private IEnumerable<string> FilterableStatuses => IsSupervisorView
+        ? AvailableStatuses.Where(s => !s.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase))
+        : AvailableStatuses;
+
+    private IEnumerable<string> ReviewableStatuses => ThesisUpdateStatuses.Reviewable;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (StudentIdParam.HasValue)
+        {
+            resolvedStudentId = StudentIdParam.Value;
+        }
+        else if (Session.IsAuthenticated && !IsSupervisorView)
+        {
+            resolvedStudentId = await Timeline.ResolveStudentIdAsync(Session.UserName ?? string.Empty);
+        }
+
+        if (resolvedStudentId != prevResolvedStudentId)
+        {
+            prevResolvedStudentId = resolvedStudentId;
+            await LoadTimelineAsync();
+        }
+    }
+
+    private async Task LoadTimelineAsync()
+    {
+        timeline.Clear();
+        if (!resolvedStudentId.HasValue) return;
+
+        var entries = await Timeline.LoadTimelineAsync(
+            resolvedStudentId.Value,
+            string.IsNullOrWhiteSpace(statusFilter) ? null : statusFilter,
+            excludeDrafts: IsSupervisorView);
+
+        timeline.AddRange(entries.Select(e => new ThesisUpdateTimelineDto(
+            e.Id,
+            e.AuthorId,
+            e.Title,
+            e.Status,
+            e.Content,
+            e.OccurredOn,
+            e.LastModifiedOn,
+            e.AttachmentFileName,
+            e.AttachmentSizeBytes,
+            e.ArtifactId,
+            e.Comments.Select(c => new ProfessorCommentDto(c.Id, c.Author, c.Message, c.CreatedOn)).ToList())));
+
+        foreach (var update in timeline)
+        {
+            if (!professorStatusSelections.ContainsKey(update.Id))
+                professorStatusSelections[update.Id] = update.Status;
+            if (!professorCommentDrafts.ContainsKey(update.Id))
+                professorCommentDrafts[update.Id] = string.Empty;
+        }
+
+        if (!IsSupervisorView && draftUpdateId is null && string.IsNullOrWhiteSpace(editorContent))
+        {
+            var draft = timeline.FirstOrDefault(u =>
+                u.Status.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase));
+
+            if (draft is not null)
+            {
+                draftUpdateId = draft.Id;
+                updateTitle = draft.Title;
+                editorContent = draft.Note;
+                previewHtml = Markdown.ToHtml(editorContent, MarkdownPipeline);
+            }
+        }
+    }
+
+    private async Task OnFilterChanged(ChangeEventArgs args)
+    {
+        statusFilter = args.Value?.ToString() ?? string.Empty;
+        await LoadTimelineAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnEditorInput(ChangeEventArgs args)
+    {
+        editorContent = args.Value?.ToString() ?? string.Empty;
+        validationMessage = null;
+        previewHtml = Markdown.ToHtml(editorContent, MarkdownPipeline);
+        ScheduleAutosave();
+    }
+
+    private void OnTitleInput(ChangeEventArgs args)
+    {
+        updateTitle = args.Value?.ToString() ?? string.Empty;
+        validationMessage = null;
+        ScheduleAutosave();
+    }
+
+    private async Task ApplyFormattingAsync(EditorFormat format)
+    {
+        editorContent = await JS.InvokeAsync<string>("thesisUpdatesEditor.applyMarkdown", editorRef, format.ToString());
+        validationMessage = null;
+        previewHtml = Markdown.ToHtml(editorContent, MarkdownPipeline);
+        ScheduleAutosave();
+    }
+
+    private void OnAttachmentSelected(InputFileChangeEventArgs args)
+    {
+        validationMessage = null;
+
+        if (args.FileCount == 0)
+        {
+            selectedAttachmentName = null;
+            selectedAttachmentSizeBytes = null;
+            selectedAttachmentFile = null;
+            return;
+        }
+
+        var file = args.File;
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+        string[] allowed = [".pdf", ".docx", ".pptx", ".zip"];
+
+        if (!allowed.Contains(extension))
+        {
+            validationMessage = "Επιτρέπονται μόνο αρχεία PDF, DOCX, PPTX ή ZIP.";
+            selectedAttachmentName = null;
+            selectedAttachmentSizeBytes = null;
+            selectedAttachmentFile = null;
+            return;
+        }
+
+        if (file.Size > MaxAttachmentSizeBytes)
+        {
+            validationMessage = $"Το αρχείο υπερβαίνει το όριο των {FormatFileSize(MaxAttachmentSizeBytes)}.";
+            selectedAttachmentName = null;
+            selectedAttachmentSizeBytes = null;
+            selectedAttachmentFile = null;
+            return;
+        }
+
+        selectedAttachmentName = file.Name;
+        selectedAttachmentSizeBytes = file.Size;
+        selectedAttachmentFile = file;
+    }
+
+    private Task PublishAsync() => PersistAsync(ThesisUpdateStatuses.UnderReview, saveAsDraft: false, isAutosave: false);
+    private Task SaveDraftAsync() => PersistAsync(ThesisUpdateStatuses.Draft, saveAsDraft: true, isAutosave: false);
+
+    private void OnProfessorCommentInput(int updateId, ChangeEventArgs args)
+    {
+        professorCommentDrafts[updateId] = args.Value?.ToString() ?? string.Empty;
+        validationMessage = null;
+    }
+
+    private string GetProfessorCommentDraft(int updateId) =>
+        professorCommentDrafts.TryGetValue(updateId, out var value) ? value : string.Empty;
+
+    private string GetProfessorStatusSelection(int updateId, string fallbackStatus) =>
+        professorStatusSelections.TryGetValue(updateId, out var value) ? value : fallbackStatus;
+
+    private void OnProfessorStatusChanged(int updateId, ChangeEventArgs args)
+    {
+        professorStatusSelections[updateId] = args.Value?.ToString() ?? ThesisUpdateStatuses.UnderReview;
+        validationMessage = null;
+    }
+
+    private async Task ApplyProfessorReviewAsync(int updateId)
+    {
+        var newStatus = professorStatusSelections.TryGetValue(updateId, out var status)
+            ? status
+            : ThesisUpdateStatuses.UnderReview;
+
+        if (!ReviewableStatuses.Contains(newStatus, StringComparer.OrdinalIgnoreCase))
+        {
+            validationMessage = "Παρακαλούμε επιλέξτε έγκυρη κατάσταση αξιολόγησης.";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        if (!Session.IsAuthenticated)
+        {
+            validationMessage = "Πρέπει να συνδεθείτε για να υποβάλετε αξιολόγηση.";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var reviewComment = professorCommentDrafts.TryGetValue(updateId, out var msg)
+            ? msg.Trim()
+            : string.Empty;
+
+        var commandStatus = newStatus.Equals(ThesisUpdateStatuses.Approved, StringComparison.OrdinalIgnoreCase)
+            ? "Approved"
+            : "NeedsRevision";
+
+        var command = new University.Application.Commands.SubmitReviewCommand
+        {
+            ProfessorUserName = Session.UserName ?? string.Empty,
+            UpdateId = updateId,
+            Comment = string.IsNullOrWhiteSpace(reviewComment) ? null : reviewComment,
+            NewStatus = commandStatus,
+        };
+
+        var result = await Sender.Send(command);
+
+        if (!result.Success)
+        {
+            validationMessage = result.Error ?? "Σφάλμα κατά την αποθήκευση της αξιολόγησης.";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        professorCommentDrafts[updateId] = string.Empty;
+        validationMessage = null;
+        await LoadTimelineAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task PersistAsync(string status, bool saveAsDraft, bool isAutosave)
+    {
+        if (string.IsNullOrWhiteSpace(editorContent))
+        {
+            if (!isAutosave)
+            {
+                validationMessage = "Παρακαλούμε γράψτε μια ενημέρωση πριν την αποθήκευση.";
+                await InvokeAsync(StateHasChanged);
+            }
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(updateTitle))
+        {
+            if (!isAutosave)
+            {
+                validationMessage = "Παρακαλούμε προσθέστε τίτλο ενημέρωσης πριν την αποθήκευση.";
+                await InvokeAsync(StateHasChanged);
+            }
+            return;
+        }
+
+        if (!resolvedStudentId.HasValue)
+        {
+            if (!isAutosave)
+            {
+                validationMessage = "Δεν εντοπίστηκε προφίλ φοιτητή. Συνδεθείτε ξανά.";
+                await InvokeAsync(StateHasChanged);
+            }
+            return;
+        }
+
+        try
+        {
+            if (!isAutosave) isSaving = true;
+
+            var domainStatus = status.Equals(ThesisUpdateStatuses.Draft, StringComparison.OrdinalIgnoreCase)
+                ? University.Domain.Enums.UpdateStatus.Draft
+                : University.Domain.Enums.UpdateStatus.Submitted;
+
+            var savedId = await Timeline.UpsertUpdateAsync(
+                resolvedStudentId.Value,
+                draftUpdateId,
+                updateTitle,
+                editorContent,
+                domainStatus);
+
+            if (saveAsDraft) draftUpdateId = savedId;
+
+            if (selectedAttachmentFile is not null && !isAutosave)
+            {
+                await using var fileStream = selectedAttachmentFile.OpenReadStream(MaxAttachmentSizeBytes);
+                var artifactId = await ArtifactStorage.StoreAsync(
+                    Session.UserName,
+                    ResolvedThesisId,
+                    selectedAttachmentFile.Name,
+                    string.IsNullOrWhiteSpace(selectedAttachmentFile.ContentType)
+                        ? "application/zip"
+                        : selectedAttachmentFile.ContentType,
+                    fileStream);
+
+                if (artifactId != Guid.Empty)
+                {
+                    await Timeline.AttachArtifactAsync(
+                        savedId,
+                        artifactId,
+                        selectedAttachmentFile.Name,
+                        selectedAttachmentFile.Size);
+                }
+            }
+
+            if (saveAsDraft)
+            {
+                autosaveMessage = $"Αποθηκεύτηκε αυτόματα στις {DateTime.Now:HH:mm:ss}.";
+            }
+            else
+            {
+                draftUpdateId = null;
+                autosaveMessage = null;
+                updateTitle = string.Empty;
+                editorContent = string.Empty;
+                previewHtml = string.Empty;
+                selectedAttachmentName = null;
+                selectedAttachmentSizeBytes = null;
+                selectedAttachmentFile = null;
+            }
+
+            validationMessage = null;
+            await LoadTimelineAsync();
+        }
+        catch (Exception ex)
+        {
+            validationMessage = ex.Message;
+        }
+        finally
+        {
+            if (!isAutosave) isSaving = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void ScheduleAutosave()
+    {
+        CancelAndDisposeAutosaveCts();
+        if (string.IsNullOrWhiteSpace(editorContent)) return;
+        autosaveCts = new CancellationTokenSource();
+        _ = AutosaveAsync(autosaveCts.Token);
+    }
+
+    private void CancelAndDisposeAutosaveCts()
+    {
+        if (autosaveCts is null) return;
+        try { autosaveCts.Cancel(); } catch (ObjectDisposedException) { }
+        try { autosaveCts.Dispose(); } catch (ObjectDisposedException) { }
+        autosaveCts = null;
+    }
+
+    private async Task AutosaveAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(AutosaveDelayMilliseconds), token);
+            await PersistAsync(ThesisUpdateStatuses.Draft, saveAsDraft: true, isAutosave: true);
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private MarkupString PreviewMarkup => new(previewHtml);
+
+    private static string FormatDate(DateTime timestamp) => timestamp.ToLocalTime()
+        .ToString("dd MMM yyyy \u2022 HH:mm", CultureInfo.CurrentUICulture);
+
+    private static bool WasEdited(ThesisUpdateTimelineDto item) =>
+        Math.Abs((item.LastModifiedOn - item.OccurredOn).TotalMinutes) >= 1;
+
+    private static string BuildSnippet(string markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown)) return "\u2014";
+        var html = Markdown.ToHtml(markdown, MarkdownPipeline);
+        var plain = Regex.Replace(html, "<[^>]+>", string.Empty);
+        plain = WebUtility.HtmlDecode(plain).Trim();
+        return plain.Length > 180 ? string.Concat(plain.AsSpan(0, 180), "\u2026") : plain;
+    }
+
+    private static string StatusBadgeClass(string status) => status switch
+    {
+        var v when v.Equals(ThesisUpdateStatuses.UnderReview, StringComparison.OrdinalIgnoreCase) => "badge status-badge status-pending",
+        var v when v.Equals(ThesisUpdateStatuses.Approved,    StringComparison.OrdinalIgnoreCase) => "badge status-badge status-accepted",
+        var v when v.Equals(ThesisUpdateStatuses.Draft,       StringComparison.OrdinalIgnoreCase) => "badge status-badge status-draft",
+        _ => "badge status-badge",
+    };
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        var kb = bytes / 1024d;
+        if (kb < 1024) return $"{kb:F1} KB";
+        return $"{kb / 1024d:F1} MB";
+    }
+
+    public void Dispose() => CancelAndDisposeAutosaveCts();
+}

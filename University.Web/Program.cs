@@ -67,10 +67,16 @@ builder.Services.AddScoped<IVirusScanService, NoOpVirusScanService>();
 // Register artifact repository
 builder.Services.AddScoped<IThesisArtifactRepository, ThesisArtifactRepository>();
 
+// Register thesis-update repository (used by SubmitReviewCommandHandler)
+builder.Services.AddScoped<University.Application.Interfaces.IThesisUpdateRepository,
+    University.Infrastructure.Repositories.ThesisUpdateRepository>();
+
 builder.Services.AddScoped<UserSessionService>();
 builder.Services.AddSingleton<IThesisInterestService, ThesisInterestService>();
 builder.Services.AddScoped<IThesisTopicAssignmentService, ThesisTopicAssignmentService>();
 builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
+builder.Services.AddScoped<University.Web.Services.IThesisTimelineService,
+    University.Web.Services.ThesisTimelineService>();
 
 // Register full-pipeline ThesisArtifactStorageService
 builder.Services.AddScoped<IThesisArtifactStorageService>(sp => new ThesisArtifactStorageService(

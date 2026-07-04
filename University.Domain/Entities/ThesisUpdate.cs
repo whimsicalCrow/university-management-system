@@ -25,6 +25,12 @@ public class ThesisUpdate : BaseEntity
     public DateTime SubmittedAt { get; internal set; }
 
     /// <summary>
+    /// Gets the short title of this update (displayed as the timeline card heading).
+    /// Null for legacy records created before this field was introduced.
+    /// </summary>
+    public string? Title { get; internal set; }
+
+    /// <summary>
     /// Gets the optional attachment file name for this update.
     /// </summary>
     public string? AttachmentFileName { get; internal set; }
@@ -33,6 +39,12 @@ public class ThesisUpdate : BaseEntity
     /// Gets the optional attachment file size in bytes.
     /// </summary>
     public long? AttachmentSizeBytes { get; internal set; }
+
+    /// <summary>
+    /// Gets the public identifier of the <see cref="ThesisArtifact"/> linked to this update, if any.
+    /// Stored as a foreign key reference (Guid) to the ThesisArtifacts.ArtifactId column.
+    /// </summary>
+    public Guid? ThesisArtifactId { get; internal set; }
 
     /// <summary>
     /// Gets the current status of the update (Draft, Submitted, or Reviewed).
@@ -56,7 +68,8 @@ public class ThesisUpdate : BaseEntity
     /// <param name="content">The content of the update.</param>
     /// <returns>A new ThesisUpdate instance.</returns>
     /// <exception cref="DomainException">Thrown when studentId is invalid or content is invalid.</exception>
-    public static ThesisUpdate Create(int studentId, string content)
+    /// <param name="title">Optional short title for the timeline card heading (max 300 chars).</param>
+    public static ThesisUpdate Create(int studentId, string content, string? title = null, UpdateStatus status = UpdateStatus.Draft)
     {
         if (studentId <= 0)
             throw new DomainException("StudentId must be greater than zero.");
@@ -67,12 +80,16 @@ public class ThesisUpdate : BaseEntity
         if (content.Length > 10000)
             throw new DomainException("Update content cannot exceed 10000 characters.");
 
+        if (title is not null && title.Length > 300)
+            throw new DomainException("Update title cannot exceed 300 characters.");
+
         return new ThesisUpdate
         {
             StudentId = studentId,
             Content = content,
+            Title = string.IsNullOrWhiteSpace(title) ? null : title.Trim(),
             SubmittedAt = DateTime.UtcNow,
-            Status = UpdateStatus.Draft
+            Status = status
         };
     }
 
@@ -115,5 +132,65 @@ public class ThesisUpdate : BaseEntity
 
         AttachmentFileName = fileName.Trim();
         AttachmentSizeBytes = sizeBytes;
+    }
+
+    /// <summary>
+    /// Links a persisted <see cref="ThesisArtifact"/> to this update so the timeline can
+    /// generate a download token for the attached file.
+    /// </summary>
+    public void LinkArtifact(Guid artifactId)
+    {
+        if (artifactId == Guid.Empty)
+            throw new DomainException("ArtifactId must not be empty.");
+
+        ThesisArtifactId = artifactId;
+    }
+
+    /// <summary>
+    /// Transitions the update back to Submitted status, indicating the student must revise
+    /// before the next review cycle.
+    /// NOTE: We reuse Submitted (not a new enum value) to avoid a DB migration for the
+    /// presentation demo — this matches the story's status-mapping decision.
+    /// </summary>
+    public void RequestRevision()
+    {
+        // Allow from either Reviewed or Submitted so the professor can request further
+        // revision even after multiple review cycles.
+        if (Status == UpdateStatus.Draft)
+            throw new DomainException("Cannot request revision on a Draft update.");
+
+        Status = UpdateStatus.Submitted;
+    }
+
+    /// <summary>
+    /// Updates the editable content fields of a Draft or Submitted update.
+    /// Reviewed updates cannot be edited.
+    /// </summary>
+    public void UpdateContent(string content, string? title)
+    {
+        if (Status == UpdateStatus.Reviewed)
+            throw new DomainException("Cannot edit a Reviewed update.");
+
+        if (string.IsNullOrWhiteSpace(content))
+            throw new DomainException("Update content cannot be null or empty.");
+
+        if (content.Length > 10000)
+            throw new DomainException("Update content cannot exceed 10000 characters.");
+
+        if (title is not null && title.Length > 300)
+            throw new DomainException("Update title cannot exceed 300 characters.");
+
+        Content = content;
+        Title = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
+    }
+
+    /// <summary>
+    /// Transitions status to the given value, provided the update is not already Reviewed.
+    /// Used by the service layer when persisting draft / submit transitions.
+    /// </summary>
+    public void SetStatus(UpdateStatus newStatus)
+    {
+        if (Status != UpdateStatus.Reviewed)
+            Status = newStatus;
     }
 }
