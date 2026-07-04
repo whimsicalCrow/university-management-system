@@ -15,3 +15,7 @@ Tasks:
 - Implement SignalR hub broadcasting action item changes to connected meeting participants.
 - Build Blazor components for inline editing of action items with optimistic UI updates.
 - Add integration tests ensuring authorization and real-time updates function as expected.
+
+Implementation Notes:
+- This file contains historical implementation notes from prior work cycles.
+- Current repository structure does not clearly confirm this full scope end-to-end, so status is tracked as Needs Verification in the status matrix.

@@ -1,0 +1,176 @@
+@page "/dashboard"
+@attribute [Authorize]
+@inject IStudentDashboardService DashboardService
+@inject UserSessionService Session
+
+<div class="container page-section">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
+        <div>
+            <span class="highlight-tag mb-2"><span class="bi bi-kanban"></span> Πίνακας Ελέγχου</span>
+            <h1 class="section-heading mb-2">Πίνακας Ελέγχου Φοιτητή</h1>
+            <p class="text-muted mb-0">Παρακολουθήστε τις βασικές ενότητες για πρόοδο, feedback και action items.</p>
+        </div>
+        <NavLink class="btn btn-primary mt-3 mt-lg-0" href="updates">Νέα ενημέρωση</NavLink>
+    </div>
+
+    <section class="mb-5">
+        <h2 class="h4 fw-semibold mb-3">Τρέχουσα Διπλωματική</h2>
+        @if (isLoading)
+        {
+            <div class="card info-card">
+                <div class="card-body text-muted">Φόρτωση πίνακα...</div>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <div class="alert alert-warning" role="alert">@loadError</div>
+        }
+        else if (dashboard.ActiveTheses.Count == 0)
+        {
+            <div class="card info-card">
+                <div class="card-body">
+                    <p class="text-muted mb-0">Δεν βρέθηκαν ενεργές αναθέσεις διπλωματικής για τον λογαριασμό σας.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var thesis in dashboard.ActiveTheses)
+                {
+                    <div class="col-12 col-xl-6">
+                        <div class="card info-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                    <h3 class="h5 mb-0">@thesis.TopicTitle</h3>
+                                    <span class="badge rounded-pill text-bg-primary">@thesis.Status</span>
+                                </div>
+                                <p class="small text-muted mb-2">Επιβλέπων: @(thesis.SupervisorName ?? "Χωρίς ανάθεση")</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="mb-5">
+        <h2 class="h4 fw-semibold mb-3">Τελευταίες Ενημερώσεις</h2>
+        @if (dashboard.RecentComments.Count == 0)
+        {
+            <div class="card info-card">
+                <div class="card-body">
+                    <p class="text-muted mb-0">Δεν υπάρχουν ακόμη σχόλια επιβλέποντα. Υποβάλετε μια ενημέρωση για να λάβετε ανατροφοδότηση.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card info-card">
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var comment in dashboard.RecentComments)
+                        {
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between flex-wrap gap-2">
+                                    <strong>@comment.Author</strong>
+                                    <span class="small text-muted">@comment.CreatedOn.ToString("dd MMM yyyy")</span>
+                                </div>
+                                <p class="mb-1">@comment.Message</p>
+                                <NavLink class="small" href="@($"updates?authorId={dashboard.StudentId}")">'Ανοιγμα χρονογραμμής</NavLink>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    </section>
+
+    <section>
+        <h2 class="h4 fw-semibold mb-3">Ενέργειες προς Εκτέλεση</h2>
+        <div class="card info-card">
+            <div class="card-body">
+                @if (dashboard.ActionItems.Count == 0)
+                {
+                    <p class="text-muted mb-0">Εκκρεμείς εργασίες και προθεσμίες θα εμφανιστούν εδώ για γρήγορη παρακολούθηση.</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var action in dashboard.ActionItems)
+                        {
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between flex-wrap gap-2">
+                                    <strong>@action.Title</strong>
+                                    @if (action.DueOn.HasValue)
+                                    {
+                                        <span class="small text-muted">Προθεσμία @action.DueOn.Value.ToString("dd MMM")</span>
+                                    }
+                                </div>
+                                <p class="mb-1">@action.Description</p>
+                                <NavLink class="small" href="@action.Href">Μετάβαση στην εργασία</NavLink>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="mt-4">
+        <h2 class="h4 fw-semibold mb-3">Συντομεύσεις Διπλωματικής</h2>
+        <div class="d-flex flex-wrap gap-2">
+            <NavLink class="btn btn-outline-primary btn-sm" href="@TimelineLink">Ενημέρωση χρονογραμμής</NavLink>
+            <NavLink class="btn btn-outline-primary btn-sm" href="@MeetingsLink">Προγραμματισμός συνάντησης</NavLink>
+        </div>
+    </section>
+
+    <section class="mt-5">
+        <h2 class="h4 fw-semibold mb-3">Πώς να Χρησιμοποιήσετε την Πλατφόρμα</h2>
+        <div class="card info-card">
+            <div class="card-body">
+                <p class="text-muted mb-3">Ακολουθήστε αυτή τη σύντομη ροή για να διατηρείτε την εργασία σας οργανωμένη:</p>
+                <ol class="mb-3">
+                    <li><strong>Θέματα Διπλωματικής:</strong> Περιηγηθείτε διαθέσιμα θέματα, εκδηλώστε ενδιαφέρον ή υποβάλετε τη δική σας πρόταση θέματος.</li>
+                    <li><strong>Ενημερώσεις:</strong> Μετβείτε στις Ενημερώσεις και δημοσιεύστε την εβδομαδιαία σας πρόοδο για αξιολόγηση.</li>
+                    <li><strong>Κλείστε Συνάντηση:</strong> Ανοίξτε τις Συναντήσεις, επιλέξτε καθηγητή και κρατήστε διαθέσιμη ώρα.</li>
+                    <li><strong>Παρακολούθηση:</strong> Επιστρέψτε εδώ για εκκρεμείς εργασίες και επερχόμενες προθεσμίες.</li>
+                </ol>
+                <div class="d-flex flex-wrap gap-2">
+                    <NavLink class="btn btn-outline-primary btn-sm" href="thesis-topics">1. Θέματα Διπλωματικής</NavLink>
+                    <NavLink class="btn btn-outline-primary btn-sm" href="updates">2. Ενημερώσεις</NavLink>
+                    <NavLink class="btn btn-outline-primary btn-sm" href="meetings">3. Συναντήσεις</NavLink>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private StudentDashboardData dashboard = StudentDashboardData.Empty;
+    private bool isLoading = true;
+    private string? loadError;
+
+    private string TimelineLink
+        => dashboard.ActiveTheses.Count == 0 || dashboard.StudentId is null
+            ? "updates"
+            : $"updates?thesisId={dashboard.ActiveTheses[0].TopicId}&authorId={dashboard.StudentId.Value}";
+
+    private string MeetingsLink
+        => dashboard.ActiveTheses.Count == 0 || dashboard.StudentId is null
+            ? "meetings"
+            : $"meetings?thesisId={dashboard.ActiveTheses[0].TopicId}&authorId={dashboard.StudentId.Value}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.IsAuthenticated || Session.Role != UserRole.Student)
+        {
+            isLoading = false;
+            loadError = "Please sign in as a student to view your dashboard.";
+            return;
+        }
+
+        dashboard = await DashboardService.GetDashboardAsync(Session.UserName);
+        isLoading = false;
+    }
+}

@@ -1,0 +1,34 @@
+@page "/meetings"
+@attribute [Authorize]
+@inject UserSessionService Session
+
+<div class="container page-section">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
+        <div>
+            <span class="highlight-tag mb-2"><span class="bi bi-calendar-event"></span> Συναντήσεις</span>
+            <h1 class="section-heading mb-2">Ημερολόγιο Συναντήσεων</h1>
+            <p class="text-muted mb-0">
+                @if (Session.Role == UserRole.Professor)
+                {
+                    <span>Μοιραστείτε την διαθεσιμότητά σας και διατηρείτε τις συναντήσεις εποπτείας συνχρονισμένες μέσω Google Calendar.</span>
+                }
+                else
+                {
+                    <span>Χρησιμοποιήστε το κοινό Google Calendar παρακάτω για να δείτε και να συμμετέχετε στις συναντήσεις εποπτείας.</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    <div class="card info-card">
+        <div class="card-body p-2 p-md-3">
+            <iframe
+                title="Thesis Meetings Google Calendar"
+                src="https://calendar.google.com/calendar/embed?height=650&wkst=2&ctz=Europe%2FAthens&showTabs=1&showCalendars=1&showPrint=0&showTitle=0&src=en.greek%23holiday%40group.v.calendar.google.com"
+                style="border: 0; width: 100%; min-height: 650px;"
+                frameborder="0"
+                scrolling="no">
+            </iframe>
+        </div>
+    </div>
+</div>

@@ -15,3 +15,7 @@ Tasks:
 - Implement scheduling commands/handlers for proposing, accepting, and declining meetings.
 - Create UI components enabling slot selection, agenda entry, and response notifications.
 - Add business rules preventing overlapping meetings for professors and cover with tests.
+
+Implementation Notes:
+- Historical notes indicate a custom scheduling implementation was attempted.
+- Current UI has shifted to Google Calendar integration, so this story is tracked as Partially Implemented in the status matrix and requires explicit scope reconciliation.

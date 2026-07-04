@@ -1,0 +1,85 @@
+﻿@inherits LayoutComponentBase
+@inject UserSessionService Session
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@implements IDisposable
+
+@if (Session.IsAuthenticated)
+{
+    <div class="layout-root">
+        <header class="site-header">
+            <NavMenu />
+        </header>
+
+        <main class="site-main">
+            @Body
+        </main>
+
+        <footer class="site-footer">
+            <div class="container">
+                <div class="row gy-3 align-items-center">
+                    <div class="col-lg-6">
+                        <strong>Σύστημα Διαχείρισης Διπλωματικών Εργασιών</strong><br />
+                        Πλατφόρμα συνεργασίας φοιτητών και επιβλεπόντων για τη διαχείριση διπλωματικών εργασιών.
+                    </div>
+                    <div class="col-lg-6 text-lg-end">
+                        <div>Χρειάζεστε βοήθεια; Επικοινωνήστε με τον επιβλέποντα καθηγητή ή τη γραμματεία του τμήματος.</div>
+                        <small>&copy; @DateTime.Now.Year Τμήμα Η.Μ.Μ.Υ. &ndash; Πανεπιστήμιο Πελοποννήσου. Τα πνευματικά δικαιώματα διατηρούνται.</small>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+}
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Session.OnChange += StateHasChanged;
+        await SyncSessionFromIdentityAsync();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && !Session.IsAuthenticated)
+            Nav.NavigateTo("/login");
+    }
+
+    private async Task SyncSessionFromIdentityAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
+        if (Session.IsAuthenticated)
+        {
+            return;
+        }
+
+        var email = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            ?? user.Identity?.Name
+            ?? "User";
+
+        var roleClaim = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var role = string.Equals(roleClaim, "Professor", StringComparison.OrdinalIgnoreCase)
+            ? UserRole.Professor
+            : UserRole.Student;
+
+        Session.Login(email, role);
+    }
+
+    public void Dispose()
+    {
+        Session.OnChange -= StateHasChanged;
+    }
+}

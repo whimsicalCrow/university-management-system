@@ -1,35 +1,106 @@
-# University Management System
+# Thesis Management System
 
-A clean-architecture, modular .NET 8 Blazor Server application scaffold.
-Includes CQRS (MediatR), FluentValidation, EF Core, unit/integration test projects, Docker, GitHub Actions, and Kubernetes manifests.
+A web platform for universities to coordinate diploma thesis workflows between students and supervising professors — topic proposals, progress updates, file submissions, and feedback, all in one place.
+
+Built with **Blazor Server** (.NET 10), **EF Core**, and **ASP.NET Core Identity**.
+
+---
+
+## What it does
+
+| Role | Capabilities |
+|---|---|
+| **Professor** | Propose thesis topics, review student updates, leave feedback, assign students to topics, receive interest notifications |
+| **Student** | Browse open topics, express interest, submit progress updates with file attachments (PDF, DOCX, PPTX, ZIP up to 20 MB), track feedback |
+
+---
 
 ## Quick start
 
+### 1. Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — provides the SQL Server database
+
+> **No Docker?** Install Visual Studio 2022 (which includes SQL Server LocalDB) and skip the Docker step — the default connection string in `appsettings.json` targets LocalDB automatically.
+
+### 2. Start the database (Docker)
+
 ```bash
-# 1) Ensure .NET 8 SDK and (optionally) Docker are installed
-dotnet --info
+docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong!Passw0rd" \
+  -p 1433:1433 --name sql -d mcr.microsoft.com/mssql/server:2022-latest
+```
 
-# 2) Generate solution + add projects + references + restore packages
-./scripts/bootstrap.sh
-# or on Windows PowerShell
-./scripts/bootstrap.ps1
+> On Windows PowerShell, replace `\` with a backtick `` ` `` for line continuation.
 
-# 3) Run the web app
+To stop/restart between sessions:
+```bash
+docker stop sql
+docker start sql
+```
+
+### 3. Run the app
+
+```bash
+git clone https://github.com/your-org/university-management-system.git
+cd university-management-system
+
+dotnet restore UniversitySystem.sln
 dotnet run --project University.Web/University.Web.csproj
 ```
 
-## Projects
-- **University.Domain** – Entities and domain interfaces
-- **University.Application** – CQRS handlers, DTOs, validators
-- **University.Infrastructure** – EF Core DbContext, repositories
-- **University.Web** – Blazor Server app
-- **tests** – Unit & integration tests
+Open **http://localhost:5118** in your browser.
+
+On first run, EF Core automatically applies migrations and seeds all demo accounts — no manual database setup needed.
+
+### 4. Log in with a demo account
+
+**Password for all accounts: `TempPass123!`**
+
+| Role | Email |
+|---|---|
+| Professor | `prof1@univ.edu` … `prof5@univ.edu` |
+| Student | `student1@univ.edu` … `student15@univ.edu` |
+
+---
+
+## Running the tests
+
+```bash
+dotnet test UniversitySystem.sln
+# Expected: 97 tests, 0 failures (82 unit + 15 integration)
+```
+
+---
+
+## Project structure
+
+```
+UniversitySystem.sln
+├── University.Domain/           Entities, enums, domain logic
+├── University.Application/      CQRS commands & handlers (MediatR), validators
+├── University.Infrastructure/   EF Core DbContext, repositories, storage services
+├── University.Web/              Blazor Server app — pages, layout, components
+└── tests/
+    ├── University.UnitTests/
+    └── University.IntegrationTests/
+```
+
+---
+
+## Tech stack
+
+.NET 10 · Blazor Server · EF Core 10 · SQL Server · ASP.NET Core Identity · MediatR · FluentValidation · xUnit · bunit
+
+---
+
+## Attachment storage
+
+By default, files are saved locally under `wwwroot/attachments/`. To switch to Azure Blob Storage, set `Attachments:StorageProvider` to `AzureBlob` in `appsettings.json` and provide your connection string.
+
+---
 
 ## CI/CD
-- GitHub Actions build + test + Docker image push (configure `DOCKER_USERNAME`/`DOCKER_PASSWORD` secrets).
 
-## Kubernetes
-Apply manifests in `k8s/` after pushing your image:
-```bash
-kubectl apply -f k8s/
-```
+Azure DevOps (`pipeline-cd.yaml`): restore → build → test → SonarQube → Docker image → Azure Container Apps.
+

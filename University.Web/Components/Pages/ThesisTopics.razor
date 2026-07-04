@@ -1,0 +1,1148 @@
+@page "/thesis-topics"
+@attribute [Authorize]
+@inject UserSessionService Session
+@inject IThesisInterestService InterestService
+@inject IThesisNotificationService NotifService
+@inject IThesisTopicAssignmentService TopicAssignmentService
+
+<div class="container page-section">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
+        <div>
+            <span class="highlight-tag mb-2">
+                <span class="bi bi-lightbulb-fill"></span>
+                @(Session.Role == UserRole.Professor ? "Προβολή Καθηγητή" : "Προβολή Φοιτητή")
+            </span>
+            <h1 class="section-heading mb-2">Θέματα Διπλωματικής</h1>
+            <p class="text-muted mb-0">
+                @if (Session.Role == UserRole.Professor)
+                {
+                    <span>Τα δημόσια θέματα είναι ορατά σε όλους. Μπορείτε να διαχειριστείτε τα δικά σας πρόχειρα και εν εξελίξει θέματα.</span>
+                }
+                else
+                {
+                    <span>Μπορείτε να περιηγηθείτε σε δημόσια θέματα, να εκδηλώσετε ενδιαφέρον και να αποκτήσετε πρόσβαση μόνο στο εν εξελίξει θέμα που σας έχει ανατεθεί.</span>
+                }
+            </p>
+        </div>
+        @if (Session.Role == UserRole.Professor)
+        {
+            <button class="btn btn-primary mt-3 mt-lg-0" @onclick="OpenProposalForm">
+                <span class="bi bi-plus-lg me-1"></span>
+                Πρόταση Νέου Θέματος
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_successMessage))
+    {
+        <div class="alert alert-success alert-dismissible" role="alert">
+            <span class="bi bi-check-circle-fill me-2"></span>@_successMessage
+            <button type="button" class="btn-close" @onclick="() => _successMessage = null" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible" role="alert">
+            <span class="bi bi-exclamation-circle-fill me-2"></span>@_errorMessage
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = null" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (_showForm)
+    {
+        <div class="card info-card mb-5">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="h5 fw-semibold mb-0">
+                        @(_editingId.HasValue ? "Επεξεργασία Θέματος" : "Πρόταση Θέματος")
+                    </h2>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="CancelForm">
+                        <span class="bi bi-x-lg"></span> Ακύρωση
+                    </button>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Τίτλος <span class="text-danger">*</span></label>
+                        <input class="form-control @(_formErrors.ContainsKey("Title") ? "is-invalid" : "")"
+                               placeholder="e.g. Machine Learning for Smart Grid Optimisation"
+                               @bind="_form.Title" @bind:event="oninput" />
+                        @if (_formErrors.TryGetValue("Title", out var titleErr))
+                        {
+                            <div class="invalid-feedback">@titleErr</div>
+                        }
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Περιγραφή <span class="text-danger">*</span></label>
+                        <textarea class="form-control @(_formErrors.ContainsKey("Description") ? "is-invalid" : "")"
+                                  rows="4"
+                                  placeholder="Summarise the research area, objectives, and expected outcomes..."
+                                  @bind="_form.Description" @bind:event="oninput"></textarea>
+                        @if (_formErrors.TryGetValue("Description", out var descErr))
+                        {
+                            <div class="invalid-feedback">@descErr</div>
+                        }
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Ερευνητικό Πεδίο</label>
+                        <select class="form-select" @bind="_form.Area">
+                            <option value="">- Επιλέξτε πεδίο -</option>
+                            @foreach (var area in ResearchAreas)
+                            {
+                                <option value="@area">@area</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Επιβλέπων Καθηγητής <span class="text-danger">*</span></label>
+                        <select class="form-select @(_formErrors.ContainsKey("SupervisingProfessor") ? "is-invalid" : "")"
+                                @bind="_form.SupervisingProfessor">
+                            <option value="">- Επιλέξτε καθηγητή -</option>
+                            @foreach (var opt in _professorOptions)
+                            {
+                                <option value="@opt.DisplayName">@opt.DisplayName</option>
+                            }
+                        </select>
+                        @if (_formErrors.TryGetValue("SupervisingProfessor", out var profErr))
+                        {
+                            <div class="invalid-feedback">@profErr</div>
+                        }
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Προαπαιτούμενα</label>
+                        <input class="form-control"
+                               placeholder="e.g. Linear Algebra, Python"
+                               @bind="_form.Prerequisites" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Μέγιστος Αριθμός Φοιτητών</label>
+                        <input type="number" min="1" max="10" class="form-control" @bind="_form.MaxStudents" />
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn btn-primary" @onclick="SubmitForm">
+                        <span class="bi bi-save me-1"></span>
+                        @(_editingId.HasValue ? "Αποθήκευση Αλλαγών" : "Αποθήκευση ως Πρόχειρο")
+                    </button>
+                    @if (!_editingId.HasValue && Session.Role == UserRole.Professor)
+                    {
+                        <button class="btn btn-outline-success" @onclick="SaveAndOpen">
+                            <span class="bi bi-unlock me-1"></span> Αποθήκευση ως Ανοιχτό
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="card info-card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label class="form-label small fw-semibold text-uppercase text-muted">Αναζήτηση</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <span class="bi bi-search text-muted"></span>
+                        </span>
+                        <input class="form-control border-start-0"
+                               placeholder="Τίτλος, λέξη-κλειδί, καθηγητής..."
+                               @bind="_searchText" @bind:event="oninput" />
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label small fw-semibold text-uppercase text-muted">Κατάσταση</label>
+                    <select class="form-select" @bind="_filterStatus">
+                        <option value="">Όλες οι καταστάσεις</option>
+                        @foreach (var s in TopicStatuses)
+                        {
+                            <option value="@s">@DisplayTopicStatus(s)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-4">
+                    <label class="form-label small fw-semibold text-uppercase text-muted">Πεδίο</label>
+                    <select class="form-select" @bind="_filterArea">
+                        <option value="">Όλα τα πεδία</option>
+                        @foreach (var a in ResearchAreas)
+                        {
+                            <option value="@a">@a</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-lg-4 col-md-4 text-md-end">
+                    <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters">
+                        <span class="bi bi-x-circle me-1"></span> Εκκαθάριση
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <span class="text-muted small">
+            Showing <strong>@FilteredTopics.Count()</strong> από <strong>@_topics.Count</strong> θέματα
+        </span>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="small text-muted">Ταξινόμηση:</span>
+            <select class="form-select form-select-sm" style="width:auto;" @bind="_sortOrder">
+                <option value="Newest">Νεότερα πρώτα</option>
+                <option value="Oldest">Παλαιότερα πρώτα</option>
+                <option value="Title">Τίτλος Α-Ω</option>
+                <option value="Status">Κατάσταση</option>
+            </select>
+        </div>
+    </div>
+
+    @{
+        var displayed = FilteredTopics.ToList();
+    }
+
+    @if (displayed.Count == 0)
+    {
+        <div class="card info-card">
+            <div class="card-body text-center text-muted py-5">
+                <span class="bi bi-search mb-3" style="font-size:2.5rem; display:block; opacity:.4;"></span>
+                <p class="mb-0">No topics match your current filters.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-3">
+            @foreach (var topic in displayed)
+            {
+                <div class="card topic-card @(topic.Status == TopicStatus.Draft ? "topic-draft" : "")">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+                            <div class="flex-fill">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <span class="@StatusBadgeClass(topic.Status)">@DisplayTopicStatus(topic.Status)</span>
+                                    @if (!string.IsNullOrWhiteSpace(topic.Area))
+                                    {
+                                        <span class="badge bg-light text-dark border">@topic.Area</span>
+                                    }
+                                    <span class="text-muted small ms-auto">
+                                        <span class="bi bi-person-circle me-1"></span>@topic.ProposedBy
+                                        &nbsp;-&nbsp;
+                                        @topic.ProposedOn.ToString("dd MMM yyyy")
+                                    </span>
+                                </div>
+
+                                <h3 class="h5 fw-semibold mb-2 topic-title">@topic.Title</h3>
+                                <p class="text-muted mb-3 topic-description">@topic.Description</p>
+
+                                @if (!string.IsNullOrWhiteSpace(topic.Prerequisites))
+                                {
+                                    <p class="mb-2 small">
+                                        <span class="bi bi-journal-check me-1 text-muted"></span>
+                                        <strong>Προαπαιτούμενα:</strong> @topic.Prerequisites
+                                    </p>
+                                }
+
+                                <p class="mb-2 small text-muted">
+                                    <span class="bi bi-person-workspace me-1"></span>
+                                    <strong>Supervising Professor:</strong> @topic.SupervisingProfessor
+                                </p>
+
+                                @if (!string.IsNullOrWhiteSpace(topic.AssignedStudentAccount) && topic.Status == TopicStatus.Ongoing)
+                                {
+                                    <p class="mb-2 small text-muted">
+                                        <span class="bi bi-person-check me-1"></span>
+                                        <strong>Ανατεθείς Φοιτητής:</strong> @topic.AssignedStudentAccount
+                                    </p>
+                                }
+
+                                @if (Session.Role == UserRole.Professor && IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Open)
+                                {
+                                    <div class="mt-3">
+                                        <p class="mb-2 small text-muted fw-semibold text-uppercase">Ενδιαφερόμενοι φοιτητές</p>
+                                        @if (topic.InterestedStudents.Count == 0)
+                                        {
+                                            <p class="mb-0 small text-muted">Δεν υπάρχει ακόμη ενδιαφέρον.</p>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex flex-column gap-2">
+                                                @foreach (var interest in topic.InterestedStudents.OrderByDescending(i => i.ExpressedOn))
+                                                {
+                                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                                        <span class="badge bg-light text-dark border">@interest.StudentEmail</span>
+                                                        <span class="small text-muted">@interest.ExpressedOn.ToString("dd MMM yyyy HH:mm")</span>
+                                                        <button class="btn btn-outline-primary btn-sm"
+                                                                @onclick="() => AssignInterestedStudentAsync(topic.Id, interest.StudentEmail)"
+                                                                disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                                            <span class="bi bi-person-check me-1"></span> Ανάθεση Φοιτητή
+                                                        </button>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+
+                                        <div class="mt-3 pt-3 border-top">
+                                            <p class="mb-2 small text-muted fw-semibold text-uppercase">Άμεση Ανάθεση</p>
+                                            <div class="d-flex gap-2 align-items-center">
+                                                <input class="form-control form-control-sm"
+                                                       placeholder="Διεύθυνση ηλεκτρονικού φοιτητή..."
+                                                       value="@(_directAssignEmails.GetValueOrDefault(topic.Id, string.Empty))"
+                                                       @oninput="args => _directAssignEmails[topic.Id] = args.Value?.ToString() ?? string.Empty"
+                                                       disabled="@_topicActionInProgressIds.Contains(topic.Id)" />
+                                                <button class="btn btn-outline-primary btn-sm flex-shrink-0"
+                                                        @onclick="() => DirectAssignStudentAsync(topic.Id)"
+                                                        disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                                    <span class="bi bi-person-check me-1"></span> Ανάθεση
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                                <span class="small text-muted">
+                                    <span class="bi bi-people me-1"></span>Μέγ. @topic.MaxStudents φοιτητής(@(topic.MaxStudents != 1 ? "ς" : ""))
+                                </span>
+                            </div>
+
+                            <div class="d-flex flex-lg-column gap-2 flex-shrink-0 align-self-start">
+                                @if (Session.Role == UserRole.Professor)
+                                {
+                                    @if (IsCurrentProfessorInCharge(topic) && (topic.Status == TopicStatus.Draft || topic.Status == TopicStatus.Open))
+                                    {
+                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => EditTopic(topic)">
+                                            <span class="bi bi-pencil me-1"></span> Επεξεργασία
+                                        </button>
+                                    }
+                                    @if (IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Draft)
+                                    {
+                                        <button class="btn btn-success btn-sm" @onclick="() => PublishTopic(topic.Id)">
+                                            <span class="bi bi-unlock me-1"></span> Δημοσίευση Ανοιχτά
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteDraft(topic.Id)">
+                                            <span class="bi bi-trash me-1"></span> Διαγραφή
+                                        </button>
+                                    }
+                                    @if (IsCurrentProfessorInCharge(topic) && (topic.Status == TopicStatus.Open || topic.Status == TopicStatus.Ongoing))
+                                    {
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => ArchiveTopic(topic.Id)">
+                                            <span class="bi bi-archive me-1"></span> Αρχειοθέτηση
+                                        </button>
+                                    }
+                                    @if (IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Open)
+                                    {
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                @onclick="() => DeleteOpenTopicAsync(topic.Id)"
+                                                disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                            <span class="bi bi-trash me-1"></span> Διαγραφή
+                                        </button>
+                                    }
+                                    @if (IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Ongoing)
+                                    {
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                @onclick="() => RemoveAssignedStudentAsync(topic.Id)"
+                                                disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                            <span class="bi bi-person-x me-1"></span> Αφαίρεση Φοιτητή
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    @if (topic.Status == TopicStatus.Open)
+                                    {
+                                        @if (HasCurrentStudentExpressedInterest(topic))
+                                        {
+                                            <button class="btn btn-success btn-sm" disabled>
+                                                <span class="bi bi-heart-fill me-1"></span> Ενδιαφέρον Καταχωρήθηκε
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-outline-success btn-sm"
+                                                    @onclick="() => ExpressInterestAsync(topic.Id)"
+                                                    disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                                @if (_topicActionInProgressIds.Contains(topic.Id))
+                                                {
+                                                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="bi bi-heart me-1"></span>
+                                                }
+                                                Εκδήλωση Ενδιαφέροντος
+                                            </button>
+                                        }
+                                    }
+                                    @if (topic.Status == TopicStatus.Ongoing && IsCurrentStudentAssigned(topic))
+                                    {
+                                        <button class="btn btn-success btn-sm" disabled>
+                                            <span class="bi bi-check-circle me-1"></span> Ανατέθηκε σε Εσάς
+                                        </button>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private static class TopicStatus
+    {
+        public const string Draft = "Draft";
+        public const string Open = "Open";
+        public const string Ongoing = "Ongoing";
+        public const string Archived = "Archived";
+    }
+
+    private static readonly Guid TopicIdFederatedLearning = Guid.Parse("2bf2d9c6-6f54-4f4f-8c10-5f765b114001");
+    private static readonly Guid TopicIdNetworkSlicing = Guid.Parse("2bf2d9c6-6f54-4f4f-8c10-5f765b114002");
+    private static readonly Guid TopicIdSmartGrid = Guid.Parse("2bf2d9c6-6f54-4f4f-8c10-5f765b114003");
+    private static readonly Guid TopicIdExplainability = Guid.Parse("2bf2d9c6-6f54-4f4f-8c10-5f765b114004");
+
+    private static readonly string[] TopicStatuses =
+    {
+        TopicStatus.Draft,
+        TopicStatus.Open,
+        TopicStatus.Ongoing,
+        TopicStatus.Archived,
+    };
+
+    private static string DisplayTopicStatus(string status) => status switch
+    {
+        TopicStatus.Draft    => "Πρόχειρο",
+        TopicStatus.Open     => "Ανοιχτό",
+        TopicStatus.Ongoing  => "Εν Εξελίξει",
+        TopicStatus.Archived => "Αρχειοθετημένο",
+        _                    => status,
+    };
+
+    private static readonly string[] ResearchAreas =
+    {
+        "Ενεργειακών Συστημάτων",
+        "Σημάτων, Τηλεπικοινωνιών και Δικτύων",
+        "Ηλεκτρονικής, Υπολογιστών και Συστημάτων",
+        "Πληροφορικής",
+    };
+
+    // Maps display name → demo account (pages 30-38 of the department curriculum document)
+    private readonly Dictionary<string, string> _professorNameToAccount = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // ── Demo accounts (ΤΜΗΜΑ ΗΜΜΥ, Πανεπιστήμιο Πελοποννήσου) ──────────────────
+        ["Επίκ. Χριστοδούλου"] = "prof1@univ.edu",   // Χριστοδούλου Σωτήριος
+        ["Αναπλ. Πετρέλλης"]   = "prof2@univ.edu",   // Πετρέλλης Νικόλαος
+        ["Επίκ. Χαραλαμπάκος"] = "prof3@univ.edu",   // Χαραλαμπάκος Βασίλειος
+        ["Αναπλ. Κούτρας"]     = "prof4@univ.edu",   // Κούτρας Αθανάσιος
+        ["Αναπλ. Τζήμας"]      = "prof5@univ.edu",   // Τζήμας Ιωάννης
+        // ── Additional faculty (no demo account) ──────────────────────────────────
+        ["Επίκ. Αλεφραγκής"]   = "",
+        ["Λεκτ. Αντωνόπουλος Γ."] = "",
+        ["Επίκ. Αντωνόπουλος Χ."] = "",
+        ["Λεκτ. Ασημακόπουλος"] = "",
+        ["Καθ. Βώρος"]          = "",
+        ["Επίκ. Γεωργάκας"]    = "",
+        ["Καθ. Δροσόπουλος"]   = "",
+        ["Καθ. Δρόσος"]        = "",
+        ["Καθ. Ζαχαράκης"]     = "",
+        ["Επίκ. Ζέρβας"]       = "",
+        ["Επίκ. Καρέλης"]      = "",
+        ["Καθ. Καψάλης"]       = "",
+        ["Καθ. Κούγιας"]       = "",
+        ["Καθ. Μπισδούνης"]    = "",
+        ["Επίκ. Πολίτη"]       = "",
+        ["Επίκ. Σουλιώτης"]    = "",
+        ["Καθ. Σταθάτος"]      = "",
+        ["Καθ. Συρμακέσης"]    = "",
+        ["Επίκ. Σχοινάς"]      = "",
+        ["Επίκ. Σωτηρόπουλος"] = "",
+        ["Καθ. Τριανταφύλλου"] = "",
+        ["Αναπλ. Τσακνάκης"]   = "",
+        ["Καθ. Χαδέλης"]       = "",
+        ["Ομότ. Υφαντής"]      = "",
+    };
+
+    // Professors loaded from the database (display name + email pairs for the dropdown)
+    private List<(string DisplayName, string Email)> _professorOptions = new();
+
+    private sealed class ThesisTopic
+    {
+        public Guid Id { get; init; } = Guid.NewGuid();
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Status { get; set; } = TopicStatus.Draft;
+        public string Area { get; set; } = string.Empty;
+        public string SupervisingProfessor { get; set; } = string.Empty;
+        public string SupervisingProfessorAccount { get; set; } = string.Empty;
+        public string Prerequisites { get; set; } = string.Empty;
+        public int MaxStudents { get; set; } = 1;
+        public string ProposedBy { get; set; } = string.Empty;
+        public DateTime ProposedOn { get; set; } = DateTime.UtcNow;
+        public string? AssignedStudentAccount { get; set; }
+        public List<TopicInterestDto> InterestedStudents { get; } = new();
+    }
+
+    private sealed record TopicInterestDto(string StudentEmail, string ProfessorEmail, DateTime ExpressedOn);
+
+    private sealed class TopicFormModel
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Area { get; set; } = string.Empty;
+        public string SupervisingProfessor { get; set; } = string.Empty;
+        public string Prerequisites { get; set; } = string.Empty;
+        public int MaxStudents { get; set; } = 1;
+
+        public void Clear()
+        {
+            Title = Description = Area = SupervisingProfessor = Prerequisites = string.Empty;
+            MaxStudents = 1;
+        }
+
+        public void Load(ThesisTopic t)
+        {
+            Title = t.Title;
+            Description = t.Description;
+            Area = t.Area;
+            SupervisingProfessor = t.SupervisingProfessor;
+            Prerequisites = t.Prerequisites;
+            MaxStudents = t.MaxStudents;
+        }
+    }
+
+    private readonly List<ThesisTopic> _topics = new();
+    private readonly TopicFormModel _form = new();
+    private readonly Dictionary<string, string> _formErrors = new();
+    private readonly HashSet<Guid> _topicActionInProgressIds = new();
+    private readonly Dictionary<Guid, string> _directAssignEmails = new();
+
+    private bool _showForm;
+    private Guid? _editingId;
+    private string _searchText = string.Empty;
+    private string _filterStatus = string.Empty;
+    private string _filterArea = string.Empty;
+    private string _sortOrder = "Newest";
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    private string CurrentAccount => NormalizeAccount(Session.UserName);
+
+    protected override async Task OnInitializedAsync()
+    {
+        SeedSampleTopics();
+        await ApplyPersistedStateAsync();
+        await LoadProfessorOptionsAsync();
+    }
+
+    private async Task LoadProfessorOptionsAsync()
+    {
+        var emails = await TopicAssignmentService.GetAllProfessorEmailsAsync();
+        var emailToName = _professorNameToAccount
+            .Where(kvp => !string.IsNullOrEmpty(kvp.Value))
+            .GroupBy(kvp => kvp.Value, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Key, StringComparer.OrdinalIgnoreCase);
+        _professorOptions = emails
+            .Select(e => (
+                DisplayName: emailToName.TryGetValue(e, out var name) ? name : e,
+                Email: e))
+            .OrderBy(o => o.DisplayName)
+            .ToList();
+    }
+
+    private void SeedSampleTopics()
+    {
+        if (_topics.Count > 0)
+        {
+            return;
+        }
+
+        _topics.Add(new ThesisTopic
+        {
+            Id = TopicIdFederatedLearning,
+            Title = "Σχεδίαση Συστήματος Βιομηχανικής Αυτοματοποίησης με Αλγορίθμους Μηχανικής Μάθησης",
+            Description = "Μελέτη και υλοποίηση συστήματος ευφυούς βιομηχανικής αυτοματοποίησης που χρησιμοποιεί τεχνικές μηχανικής μάθησης για βελτιστοποίηση παραγωγικών διαδικασιών και προγνωστική συντήρηση εξοπλισμού.",
+            Status = TopicStatus.Draft,
+            Area = "Ηλεκτρονικής, Υπολογιστών και Συστημάτων",
+            SupervisingProfessor = "Επίκ. Χριστοδούλου",
+            SupervisingProfessorAccount = "prof1@univ.edu",
+            Prerequisites = "Ψηφιακά Συστήματα, Python, Βασικές αρχές ML",
+            MaxStudents = 1,
+            ProposedBy = "Επίκ. Χριστοδούλου",
+            ProposedOn = DateTime.UtcNow.AddDays(-3),
+        });
+
+        _topics.Add(new ThesisTopic
+        {
+            Id = TopicIdNetworkSlicing,
+            Title = "5G Network Slicing για Βιομηχανικές Εφαρμογές IoT",
+            Description = "Σχεδιασμός και αξιολόγηση πλαισίου network slicing προσαρμοσμένου σε βιομηχανικές εφαρμογές IoT με αυστηρές απαιτήσεις καθυστέρησης, χρησιμοποιώντας τεχνικές επεξεργασίας σήματος και διαχείρισης δικτύων 5G.",
+            Status = TopicStatus.Open,
+            Area = "Σημάτων, Τηλεπικοινωνιών και Δικτύων",
+            SupervisingProfessor = "Αναπλ. Πετρέλλης",
+            SupervisingProfessorAccount = "prof2@univ.edu",
+            Prerequisites = "Δίκτυα Υπολογιστών, Ψηφιακές Επικοινωνίες",
+            MaxStudents = 2,
+            ProposedBy = "Αναπλ. Πετρέλλης",
+            ProposedOn = DateTime.UtcNow.AddDays(-14),
+        });
+
+        _topics.Add(new ThesisTopic
+        {
+            Id = TopicIdSmartGrid,
+            Title = "Πρόβλεψη Ζήτησης Ηλεκτρικής Ενέργειας με Μοντέλα Βαθιάς Μάθησης",
+            Description = "Εφαρμογή μοντέλων ακολουθίας βαθιάς μάθησης για βραχυπρόθεσμη πρόβλεψη ζήτησης ηλεκτρικής ενέργειας σε δίκτυα διανομής, με στόχο τη βέλτιστη οικονομική διαχείριση της ηλεκτρικής ενέργειας.",
+            Status = TopicStatus.Open,
+            Area = "Ενεργειακών Συστημάτων",
+            SupervisingProfessor = "Επίκ. Χριστοδούλου",
+            SupervisingProfessorAccount = "prof1@univ.edu",
+            Prerequisites = "Γραμμική Άλγεβρα, Python, Βασικές αρχές χρονοσειρών",
+            MaxStudents = 1,
+            ProposedBy = "Επίκ. Χριστοδούλου",
+            ProposedOn = DateTime.UtcNow.AddDays(-21),
+        });
+
+        _topics.Add(new ThesisTopic
+        {
+            Id = TopicIdExplainability,
+            Title = "Κατανεμημένη Επεξεργασία Μεγάλων Δεδομένων με Αλγορίθμους Εξόρυξης Γνώσης",
+            Description = "Σχεδιασμός και υλοποίηση κατανεμημένου συστήματος επεξεργασίας μεγάλων δεδομένων με χρήση αλγορίθμων εξόρυξης γνώσης και μηχανικής μάθησης για ανάλυση δεδομένων μεγάλης κλίμακας.",
+            Status = TopicStatus.Archived,
+            Area = "Πληροφορικής",
+            SupervisingProfessor = "Επίκ. Χαραλαμπάκος",
+            SupervisingProfessorAccount = "prof3@univ.edu",
+            Prerequisites = "Κατανεμημένα Συστήματα, Python, Βάσεις Δεδομένων",
+            MaxStudents = 1,
+            ProposedBy = "Επίκ. Χαραλαμπάκος",
+            ProposedOn = DateTime.UtcNow.AddDays(-30),
+        });
+    }
+
+    private async Task ApplyPersistedStateAsync()
+    {
+        var persistedAssignments = await TopicAssignmentService.GetPersistedAssignmentsAsync();
+        var persistedInterests = await InterestService.GetInterestsAsync();
+
+        foreach (var topic in _topics)
+        {
+            topic.InterestedStudents.Clear();
+
+            foreach (var interest in persistedInterests.Where(i => i.TopicId == topic.Id))
+            {
+                topic.InterestedStudents.Add(new TopicInterestDto(
+                    NormalizeAccount(interest.StudentEmail),
+                    NormalizeAccount(interest.ProfessorEmail),
+                    interest.ExpressedOn));
+            }
+
+            if (!persistedAssignments.TryGetValue(topic.Id, out var assignment))
+            {
+                continue;
+            }
+
+            topic.Status = TopicStatus.Ongoing;
+            topic.AssignedStudentAccount = NormalizeAccount(assignment.StudentEmail);
+            topic.SupervisingProfessorAccount = NormalizeAccount(assignment.ProfessorEmail);
+        }
+    }
+
+    private IEnumerable<ThesisTopic> FilteredTopics
+    {
+        get
+        {
+            IEnumerable<ThesisTopic> q = _topics.Where(IsVisibleToCurrentUser);
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                var term = _searchText.Trim();
+                q = q.Where(t =>
+                    t.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    t.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    t.ProposedBy.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    t.SupervisingProfessor.Contains(term, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_filterStatus))
+            {
+                q = q.Where(t => t.Status == _filterStatus);
+            }
+
+            if (!string.IsNullOrWhiteSpace(_filterArea))
+            {
+                q = q.Where(t => t.Area == _filterArea);
+            }
+
+            q = _sortOrder switch
+            {
+                "Oldest" => q.OrderBy(t => t.ProposedOn),
+                "Title" => q.OrderBy(t => t.Title),
+                "Status" => q.OrderBy(t => t.Status),
+                _ => q.OrderByDescending(t => t.ProposedOn),
+            };
+
+            return q;
+        }
+    }
+
+    private bool IsVisibleToCurrentUser(ThesisTopic topic)
+    {
+        if (Session.Role == UserRole.Student)
+        {
+            return IsPublicStatus(topic.Status) ||
+                   (topic.Status == TopicStatus.Ongoing && IsCurrentStudentAssigned(topic));
+        }
+
+        return IsPublicStatus(topic.Status) ||
+               ((topic.Status == TopicStatus.Ongoing || topic.Status == TopicStatus.Draft) && IsCurrentProfessorInCharge(topic));
+    }
+
+    private static bool IsPublicStatus(string status) =>
+        status == TopicStatus.Open || status == TopicStatus.Archived;
+
+    private bool IsCurrentProfessorInCharge(ThesisTopic topic)
+    {
+        if (Session.Role != UserRole.Professor)
+        {
+            return false;
+        }
+
+        var account = CurrentAccount;
+        if (string.IsNullOrWhiteSpace(account))
+        {
+            return false;
+        }
+
+        return NormalizeAccount(topic.SupervisingProfessorAccount) == account;
+    }
+
+    private bool IsCurrentStudentAssigned(ThesisTopic topic)
+    {
+        if (Session.Role != UserRole.Student)
+        {
+            return false;
+        }
+
+        return NormalizeAccount(topic.AssignedStudentAccount) == CurrentAccount;
+    }
+
+    private void OpenProposalForm()
+    {
+        if (Session.Role != UserRole.Professor)
+        {
+            return;
+        }
+
+        _form.Clear();
+        _editingId = null;
+        _formErrors.Clear();
+        _showForm = true;
+
+        if (Session.Role == UserRole.Professor)
+        {
+            var account = CurrentAccount;
+            var opt = _professorOptions.FirstOrDefault(o =>
+                string.Equals(o.Email, account, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(opt.Email))
+                _form.SupervisingProfessor = opt.DisplayName;
+        }
+    }
+
+    private void CancelForm()
+    {
+        _showForm = false;
+        _editingId = null;
+        _formErrors.Clear();
+    }
+
+    private void EditTopic(ThesisTopic topic)
+    {
+        if (Session.Role == UserRole.Professor && !IsCurrentProfessorInCharge(topic))
+        {
+            return;
+        }
+
+        _form.Load(topic);
+        _editingId = topic.Id;
+        _formErrors.Clear();
+        _showForm = true;
+        _successMessage = null;
+        _errorMessage = null;
+    }
+
+    private bool ValidateForm()
+    {
+        _formErrors.Clear();
+
+        if (string.IsNullOrWhiteSpace(_form.Title))
+        {
+            _formErrors["Title"] = "Title is required.";
+        }
+        else if (_form.Title.Trim().Length < 10)
+        {
+            _formErrors["Title"] = "Title must be at least 10 characters.";
+        }
+
+        if (string.IsNullOrWhiteSpace(_form.Description))
+        {
+            _formErrors["Description"] = "Description is required.";
+        }
+        else if (_form.Description.Trim().Length < 30)
+        {
+            _formErrors["Description"] = "Description must be at least 30 characters.";
+        }
+
+        if (string.IsNullOrWhiteSpace(_form.SupervisingProfessor))
+        {
+            _formErrors["SupervisingProfessor"] = "Supervising professor is required.";
+        }
+
+        return _formErrors.Count == 0;
+    }
+
+    private void SubmitForm()
+    {
+        SaveTopic(TopicStatus.Draft);
+    }
+
+    private void SaveAndOpen()
+    {
+        SaveTopic(TopicStatus.Open);
+    }
+
+    private void SaveTopic(string newStatus)
+    {
+        if (!ValidateForm())
+        {
+            return;
+        }
+
+        if (_editingId.HasValue)
+        {
+            var topic = _topics.FirstOrDefault(t => t.Id == _editingId.Value);
+            if (topic is not null)
+            {
+                topic.Title = _form.Title.Trim();
+                topic.Description = _form.Description.Trim();
+                topic.Area = _form.Area;
+                topic.SupervisingProfessor = _form.SupervisingProfessor.Trim();
+                topic.SupervisingProfessorAccount = ResolveProfessorAccount(topic.SupervisingProfessor, topic.SupervisingProfessorAccount);
+                topic.Prerequisites = _form.Prerequisites.Trim();
+                topic.MaxStudents = _form.MaxStudents;
+                topic.Status = newStatus;
+            }
+            _successMessage = "Topic updated successfully.";
+        }
+        else
+        {
+            var supervisingProfessor = _form.SupervisingProfessor.Trim();
+            var supervisingAccount = ResolveProfessorAccount(supervisingProfessor, Session.Role == UserRole.Professor ? CurrentAccount : string.Empty);
+            _topics.Insert(0, new ThesisTopic
+            {
+                Id = Guid.NewGuid(),
+                Title = _form.Title.Trim(),
+                Description = _form.Description.Trim(),
+                Status = newStatus,
+                Area = _form.Area,
+                SupervisingProfessor = supervisingProfessor,
+                SupervisingProfessorAccount = supervisingAccount,
+                Prerequisites = _form.Prerequisites.Trim(),
+                MaxStudents = _form.MaxStudents,
+                ProposedBy = Session.UserName ?? (Session.Role == UserRole.Student ? "Student" : "Professor"),
+                ProposedOn = DateTime.UtcNow,
+            });
+
+            _successMessage = newStatus == TopicStatus.Open
+                ? "Topic published as Open."
+                : "Topic saved as Draft.";
+        }
+
+        _errorMessage = null;
+        _showForm = false;
+        _editingId = null;
+    }
+
+    private void PublishTopic(Guid id)
+    {
+        var topic = _topics.FirstOrDefault(x => x.Id == id);
+        if (topic is null || !IsCurrentProfessorInCharge(topic))
+        {
+            return;
+        }
+
+        topic.Status = TopicStatus.Open;
+        _successMessage = $"'{topic.Title}' is now Open.";
+        _errorMessage = null;
+    }
+
+    private void ArchiveTopic(Guid id)
+    {
+        var topic = _topics.FirstOrDefault(x => x.Id == id);
+        if (topic is null || !IsCurrentProfessorInCharge(topic))
+        {
+            return;
+        }
+
+        topic.Status = TopicStatus.Archived;
+        _successMessage = $"'{topic.Title}' archived.";
+        _errorMessage = null;
+    }
+
+    private void DeleteDraft(Guid id)
+    {
+        var topic = _topics.FirstOrDefault(x => x.Id == id);
+        if (topic is null || topic.Status != TopicStatus.Draft || !IsCurrentProfessorInCharge(topic))
+        {
+            return;
+        }
+
+        _topics.Remove(topic);
+        _successMessage = $"Draft '{topic.Title}' deleted.";
+        _errorMessage = null;
+    }
+
+    private async Task DeleteOpenTopicAsync(Guid id)
+    {
+        var topic = _topics.FirstOrDefault(x => x.Id == id);
+        if (topic is null || topic.Status != TopicStatus.Open || !IsCurrentProfessorInCharge(topic))
+        {
+            return;
+        }
+
+        _topicActionInProgressIds.Add(id);
+        try
+        {
+            await InterestService.ClearTopicInterestsAsync(topic.Id);
+            _topics.Remove(topic);
+            _successMessage = $"Topic '{topic.Title}' deleted.";
+            _errorMessage = null;
+        }
+        finally
+        {
+            _topicActionInProgressIds.Remove(id);
+        }
+    }
+
+    private bool HasCurrentStudentExpressedInterest(ThesisTopic topic)
+    {
+        if (Session.Role != UserRole.Student)
+        {
+            return false;
+        }
+
+        return topic.InterestedStudents.Any(interest => NormalizeAccount(interest.StudentEmail) == CurrentAccount);
+    }
+
+    private async Task ExpressInterestAsync(Guid id)
+    {
+        if (Session.Role != UserRole.Student)
+        {
+            return;
+        }
+
+        var topic = _topics.FirstOrDefault(x => x.Id == id);
+        if (topic is null || topic.Status != TopicStatus.Open)
+        {
+            return;
+        }
+
+        if (HasCurrentStudentExpressedInterest(topic))
+        {
+            _successMessage = $"Το ενδιαφέρον σας για το θέμα '{topic.Title}' έχει ήδη καταχωρηθεί.";
+            _errorMessage = null;
+            return;
+        }
+
+        _topicActionInProgressIds.Add(id);
+        try
+        {
+            var recorded = await InterestService.RecordInterestAsync(
+                topic.Id,
+                topic.Title,
+                Session.UserName ?? string.Empty,
+                topic.SupervisingProfessorAccount);
+
+            if (!recorded)
+            {
+                _errorMessage = "Δεν ήταν δυνατή η καταχώρηση του ενδιαφέροντός σας. Δοκιμάστε ξανά.";
+                _successMessage = null;
+                return;
+            }
+
+            await ApplyPersistedStateAsync();
+
+            await NotifService.AddAsync(
+                topic.SupervisingProfessorAccount,
+                Session.UserName!,
+                topic.Title);
+
+            _successMessage = $"Το ενδιαφέρον σας για το θέμα '{topic.Title}' εστάλη στον {topic.SupervisingProfessor}.";
+            _errorMessage = null;
+        }
+        finally
+        {
+            _topicActionInProgressIds.Remove(id);
+        }
+    }
+
+    private async Task AssignInterestedStudentAsync(Guid topicId, string studentEmail)
+    {
+        if (Session.Role != UserRole.Professor)
+        {
+            return;
+        }
+
+        var topic = _topics.FirstOrDefault(x => x.Id == topicId);
+        if (topic is null || topic.Status != TopicStatus.Open || !IsCurrentProfessorInCharge(topic))
+        {
+            return;
+        }
+
+        var normalizedStudentEmail = NormalizeAccount(studentEmail);
+        if (!topic.InterestedStudents.Any(interest => NormalizeAccount(interest.StudentEmail) == normalizedStudentEmail))
+        {
+            _errorMessage = "Choose a student who has expressed interest in this topic.";
+            _successMessage = null;
+            return;
+        }
+
+        _topicActionInProgressIds.Add(topicId);
+        try
+        {
+            var result = await TopicAssignmentService.AssignTopicAsync(
+                topic.Id,
+                topic.Title,
+                studentEmail,
+                topic.SupervisingProfessorAccount);
+
+            if (!result.Success)
+            {
+                _errorMessage = result.Error ?? "Unable to assign the selected student.";
+                _successMessage = null;
+                return;
+            }
+
+            await InterestService.RemoveInterestAsync(topicId, studentEmail);
+            await ApplyPersistedStateAsync();
+
+            topic.Status = TopicStatus.Ongoing;
+            topic.AssignedStudentAccount = normalizedStudentEmail;
+            _successMessage = $"'{topic.Title}' assigned to {normalizedStudentEmail}.";
+            _errorMessage = null;
+        }
+        finally
+        {
+            _topicActionInProgressIds.Remove(topicId);
+        }
+    }
+
+    private string ResolveProfessorAccount(string professorName, string fallback)
+    {
+        if (_professorNameToAccount.TryGetValue(professorName, out var mapped))
+        {
+            return mapped;
+        }
+
+        return string.IsNullOrWhiteSpace(fallback) ? string.Empty : fallback;
+    }
+
+    private void ClearFilters()
+    {
+        _searchText = string.Empty;
+        _filterStatus = string.Empty;
+        _filterArea = string.Empty;
+        _sortOrder = "Newest";
+    }
+
+    private static string NormalizeAccount(string? value) => (value ?? string.Empty).Trim().ToLowerInvariant();
+
+    private async Task DirectAssignStudentAsync(Guid topicId)
+    {
+        if (Session.Role != UserRole.Professor) return;
+
+        var topic = _topics.FirstOrDefault(x => x.Id == topicId);
+        if (topic is null || !IsCurrentProfessorInCharge(topic)) return;
+
+        if (!_directAssignEmails.TryGetValue(topicId, out var studentEmail) || string.IsNullOrWhiteSpace(studentEmail))
+        {
+            _errorMessage = "Please enter a student email address.";
+            _successMessage = null;
+            return;
+        }
+
+        _topicActionInProgressIds.Add(topicId);
+        try
+        {
+            var result = await TopicAssignmentService.AssignTopicAsync(
+                topic.Id,
+                topic.Title,
+                studentEmail.Trim(),
+                topic.SupervisingProfessorAccount);
+
+            if (!result.Success)
+            {
+                _errorMessage = result.Error ?? "Unable to assign the student.";
+                _successMessage = null;
+                return;
+            }
+
+            await InterestService.RemoveInterestAsync(topicId, studentEmail.Trim());
+            await ApplyPersistedStateAsync();
+
+            topic.Status = TopicStatus.Ongoing;
+            topic.AssignedStudentAccount = NormalizeAccount(studentEmail);
+            _directAssignEmails.Remove(topicId);
+            _successMessage = $"'{topic.Title}' assigned to {NormalizeAccount(studentEmail)}.";
+            _errorMessage = null;
+        }
+        finally
+        {
+            _topicActionInProgressIds.Remove(topicId);
+        }
+    }
+
+    private async Task RemoveAssignedStudentAsync(Guid topicId)
+    {
+        if (Session.Role != UserRole.Professor) return;
+
+        var topic = _topics.FirstOrDefault(x => x.Id == topicId);
+        if (topic is null || !IsCurrentProfessorInCharge(topic)) return;
+
+        _topicActionInProgressIds.Add(topicId);
+        try
+        {
+            var result = await TopicAssignmentService.RemoveAssignmentAsync(topic.Id);
+
+            if (!result.Success)
+            {
+                _errorMessage = result.Error ?? "Unable to remove the assignment.";
+                _successMessage = null;
+                return;
+            }
+
+            topic.Status = TopicStatus.Open;
+            topic.AssignedStudentAccount = null;
+            _successMessage = $"Assignment removed. '{topic.Title}' is now Open.";
+            _errorMessage = null;
+        }
+        finally
+        {
+            _topicActionInProgressIds.Remove(topicId);
+        }
+    }
+
+    private static string StatusBadgeClass(string status) => status switch
+    {
+        TopicStatus.Open => "badge bg-success",
+        TopicStatus.Ongoing => "badge bg-primary",
+        TopicStatus.Archived => "badge bg-secondary",
+        TopicStatus.Draft => "badge bg-light text-dark border",
+        _ => "badge bg-secondary",
+    };
+}
