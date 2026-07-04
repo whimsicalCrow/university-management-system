@@ -13,6 +13,7 @@
 @inject UserSessionService Session
 @inject IThesisArtifactStorageService ArtifactStorage
 @inject University.Web.Services.IThesisTimelineService Timeline
+@inject University.Web.Services.IThesisTopicAssignmentService TopicAssignment
 @inject MediatR.ISender Sender
 
 <div class="container page-section">
@@ -36,15 +37,80 @@
         }
     </div>
 
-    @if (!resolvedStudentId.HasValue && Session.IsAuthenticated)
+    @if (!IsSupervisorView && resolvedStudentId.HasValue && !_hasThesisAssignment)
     {
-        <div class="alert alert-info" role="alert">
-            <span class="bi bi-hourglass-split me-2"></span>
-            Φόρτωση δεδομένων φοιτητή...
+        <div class="card info-card">
+            <div class="card-body text-center py-5">
+                <span class="bi bi-journal-x mb-3" style="font-size:2.5rem; display:block; opacity:.4;"></span>
+                <h2 class="h5 fw-semibold mb-2">No thesis assigned yet</h2>
+                <p class="text-muted mb-4">
+                    You haven't been assigned to a thesis topic. Visit Thesis Topics to browse available topics and express your interest.
+                </p>
+                <a class="btn btn-primary" href="thesis-topics">
+                    <span class="bi bi-lightbulb me-1"></span>
+                    Browse Thesis Topics
+                </a>
+            </div>
         </div>
+    }
+    else if (IsSupervisorView && !StudentIdParam.HasValue && _selectedThesis is null)
+    {
+        @* ── Professor thesis picker ── *@
+        @if (_professorTheses.Count == 0)
+        {
+            <div class="card info-card">
+                <div class="card-body text-center py-5">
+                    <span class="bi bi-people mb-3" style="font-size:2.5rem; display:block; opacity:.4;"></span>
+                    <h2 class="h5 fw-semibold mb-2">No ongoing theses</h2>
+                    <p class="text-muted mb-0">You don't have any students assigned to a thesis yet. Go to Thesis Topics to assign a student.</p>
+                    <a class="btn btn-outline-primary mt-3" href="thesis-topics">
+                        <span class="bi bi-lightbulb me-1"></span> Thesis Topics
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted mb-3">Select a thesis to view and review the student's updates.</p>
+            <div class="d-flex flex-column gap-3">
+                @foreach (var thesis in _professorTheses)
+                {
+                    <div class="card info-card">
+                        <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                            <div>
+                                <div class="fw-semibold mb-1">@thesis.TopicTitle</div>
+                                <div class="small text-muted">
+                                    <span class="bi bi-person-circle me-1"></span>@thesis.StudentEmail
+                                    &nbsp;·&nbsp;
+                                    <span class="bi bi-calendar3 me-1"></span>Assigned @thesis.AssignedOn.ToString("dd MMM yyyy")
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-sm flex-shrink-0" @onclick="() => SelectThesisAsync(thesis)">
+                                <span class="bi bi-journal-text me-1"></span> View Updates
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
     }
     else
     {
+        @* ── Back link when professor selected a thesis from the picker ── *@
+        @if (IsSupervisorView && _selectedThesis is not null)
+        {
+            <div class="mb-4 d-flex align-items-center gap-3">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="BackToThesisList">
+                    <span class="bi bi-arrow-left me-1"></span> Back to thesis list
+                </button>
+                <div>
+                    <span class="fw-semibold">@_selectedThesis.TopicTitle</span>
+                    <span class="text-muted small ms-2">
+                        <span class="bi bi-person-circle me-1"></span>@_selectedThesis.StudentEmail
+                    </span>
+                </div>
+            </div>
+        }
         @if (!IsSupervisorView)
         {
             <section class="card compose-card mb-5">
@@ -342,6 +408,9 @@
 
     private int? resolvedStudentId;
     private int? prevResolvedStudentId;
+    private bool _hasThesisAssignment = true; // default true avoids a flash of blocked-state for professors
+    private IReadOnlyList<ProfessorThesisView> _professorTheses = Array.Empty<ProfessorThesisView>();
+    private ProfessorThesisView? _selectedThesis;
     private string editorContent = string.Empty;
     private string updateTitle = string.Empty;
     private string previewHtml = string.Empty;
@@ -391,12 +460,41 @@
         {
             resolvedStudentId = await Timeline.ResolveStudentIdAsync(Session.UserName ?? string.Empty);
         }
+        else if (IsSupervisorView && !StudentIdParam.HasValue)
+        {
+            // Professor without a pre-selected student: load their thesis list for the picker.
+            _professorTheses = await TopicAssignment.GetProfessorThesesAsync(Session.UserName ?? string.Empty);
+            // resolvedStudentId stays null until professor picks a thesis.
+            return;
+        }
+
+        // Gate: students can only access updates once assigned to a thesis.
+        if (!IsSupervisorView && resolvedStudentId.HasValue)
+        {
+            _hasThesisAssignment = await TopicAssignment.HasActiveAssignmentAsync(resolvedStudentId.Value);
+        }
 
         if (resolvedStudentId != prevResolvedStudentId)
         {
             prevResolvedStudentId = resolvedStudentId;
             await LoadTimelineAsync();
         }
+    }
+
+    private async Task SelectThesisAsync(ProfessorThesisView thesis)
+    {
+        _selectedThesis = thesis;
+        resolvedStudentId = thesis.StudentId;
+        prevResolvedStudentId = null; // force reload
+        await LoadTimelineAsync();
+    }
+
+    private void BackToThesisList()
+    {
+        _selectedThesis = null;
+        resolvedStudentId = null;
+        prevResolvedStudentId = null;
+        timeline.Clear();
     }
 
     private async Task LoadTimelineAsync()

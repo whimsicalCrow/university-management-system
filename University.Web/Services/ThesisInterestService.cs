@@ -16,6 +16,9 @@ public interface IThesisInterestService
     Task<bool> HasInterestAsync(Guid topicId, string studentEmail, CancellationToken cancellationToken = default);
 
     Task<bool> RemoveInterestAsync(Guid topicId, string studentEmail, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes all recorded interests for the given topic (e.g. when the topic is deleted).</summary>
+    Task ClearTopicInterestsAsync(Guid topicId, CancellationToken cancellationToken = default);
 }
 
 public sealed record PersistedTopicInterest(
@@ -50,7 +53,7 @@ public sealed class ThesisInterestService : IThesisInterestService
         string professorEmail,
         CancellationToken cancellationToken = default)
     {
-        if (topicId == Guid.Empty || string.IsNullOrWhiteSpace(topicTitle) || string.IsNullOrWhiteSpace(studentEmail) || string.IsNullOrWhiteSpace(professorEmail))
+        if (topicId == Guid.Empty || string.IsNullOrWhiteSpace(topicTitle) || string.IsNullOrWhiteSpace(studentEmail))
         {
             return Task.FromResult(false);
         }
@@ -99,6 +102,12 @@ public sealed class ThesisInterestService : IThesisInterestService
         }
 
         return Task.FromResult(removed);
+    }
+
+    public Task ClearTopicInterestsAsync(Guid topicId, CancellationToken cancellationToken = default)
+    {
+        _interests.TryRemove(topicId, out _);
+        return Task.CompletedTask;
     }
 
     private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
