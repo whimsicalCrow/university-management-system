@@ -44,12 +44,32 @@ UniversitySystem.sln
 ### Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- SQL Server — **LocalDB** (included with Visual Studio) **or** a Docker container:
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (recommended) **or** SQL Server LocalDB (included with Visual Studio)
+
+### Docker Desktop setup (recommended)
+
+1. Install and start [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+2. Pull and run SQL Server 2022:
 
 ```powershell
 docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong!Passw0rd" `
   -p 1433:1433 --name sql -d mcr.microsoft.com/mssql/server:2022-latest
 ```
+
+3. Verify the container is running:
+
+```powershell
+docker ps   # should show container "sql", port 0.0.0.0:1433->1433/tcp
+```
+
+4. To stop and restart the container between sessions:
+
+```powershell
+docker stop sql
+docker start sql
+```
+
+The `appsettings.Development.json` connection string is pre-configured for this container — no further changes needed.
 
 ### Run
 
