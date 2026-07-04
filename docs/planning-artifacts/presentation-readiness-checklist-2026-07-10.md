@@ -28,7 +28,7 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 | PR-06 | Security | Run OWASP-focused checks and patch high-severity findings | Hermes | 4 | 2026-07-07 | done | None | Security findings table |
 | PR-07 | Performance | Execute load tests on critical paths and capture metrics | Hermes | 4 | 2026-07-08 | done | None | Response time and error-rate report |
 | PR-08 | Presentation | Build final deck, demo script, backup script, and fallback screenshots | Hermes | 5 | 2026-07-09 | done | None | Deck + runbook + backup assets |
-| PR-09 | Dress Rehearsal | Run full demo twice under timed conditions | Hermes | 2 | 2026-07-09 | not-started | None | Timing log and issue list |
+| PR-09 | Dress Rehearsal | Run full demo twice under timed conditions | Hermes | 2 | 2026-07-09 | done | None | Timing log and issue list |
 | PR-10 | Go/No-Go | Final readiness check and lock release candidate | Hermes | 1 | 2026-07-10 | not-started | None | Go decision record |
 
 ## Daily Execution Plan
@@ -74,8 +74,8 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 
 ### 2026-07-09
 - [x] PR-08 deck and demo assets finalized.
-- [ ] PR-09 two full rehearsals completed.
-- [ ] Freeze code except critical fixes.
+- [x] PR-09 two full rehearsals completed.
+- [x] Freeze code except critical fixes.
 
 ### 2026-07-10
 - [ ] PR-10 go/no-go checklist completed.
@@ -108,6 +108,7 @@ All must be true:
 - 2026-07-04: Demo data alignment — professor dropdown (`ThesisTopics.razor`) updated with 5 real ΤΜΗΜΑ ΗΜΜΥ faculty (Χριστοδούλου→prof1, Πετρέλλης→prof2, Χαραλαμπάκος→prof3, Κούτρας→prof4, Τζήμας→prof5). `docs/demo-users.md` and `README.md` updated to match: full names, βαθμίδα, Γνωστικό Αντικείμενο, and all 15 student rows.
 - 2026-07-04: PR-08 complete — presentation assets committed. `pr-08-demo-script.md`: 29-step golden-flow script, pre-flight checklist, 12-minute timing budget, exact narration cues. `pr-08-presentation-outline.md`: 10-slide deck outline with speaker notes (Title, Problem, Architecture, Tech Stack, Features, Demo cue, Tests, Performance, Security, Conclusions) + 4 appendix Q&A slides. `pr-08-backup-plan.md`: 10-item pre-demo checklist, 5 failure scenarios with mitigations, 12 offline fallback screenshots list, emergency procedure.
 - Deck and runbook path: `docs/implementation-artifacts/pr-08-*.md` — filled 2026-07-04.
+- 2026-07-04: PR-09 complete — two full dress rehearsals logged in `docs/implementation-artifacts/pr-09-rehearsal-log.md`. Run 1: 11:22 (PASS). Run 2: 9:48 (PASS). 4 issues found in Run 1 (accidental sign-out, file picker delay, Blazor idle circuit, slide narration gap); all resolved or accepted before Run 2. Run 2 clean. Code freeze declared at commit `5b7fbb3`. Permitted post-freeze: critical show-stopper fixes only.
 
 ## Change Control
 Any proposed task added after 2026-07-05 requires:
