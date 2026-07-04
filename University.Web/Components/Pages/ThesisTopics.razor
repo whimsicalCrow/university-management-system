@@ -94,9 +94,14 @@
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Supervising Professor <span class="text-danger">*</span></label>
-                        <input class="form-control @(_formErrors.ContainsKey("SupervisingProfessor") ? "is-invalid" : "")"
-                               placeholder="e.g. Prof. Papadopoulos"
-                               @bind="_form.SupervisingProfessor" @bind:event="oninput" />
+                        <select class="form-select @(_formErrors.ContainsKey("SupervisingProfessor") ? "is-invalid" : "")"
+                                @bind="_form.SupervisingProfessor">
+                            <option value="">- Select professor -</option>
+                            @foreach (var opt in _professorOptions)
+                            {
+                                <option value="@opt.DisplayName">@opt.DisplayName</option>
+                            }
+                        </select>
                         @if (_formErrors.TryGetValue("SupervisingProfessor", out var profErr))
                         {
                             <div class="invalid-feedback">@profErr</div>
@@ -277,6 +282,22 @@
                                                 }
                                             </div>
                                         }
+
+                                        <div class="mt-3 pt-3 border-top">
+                                            <p class="mb-2 small text-muted fw-semibold text-uppercase">Direct assign</p>
+                                            <div class="d-flex gap-2 align-items-center">
+                                                <input class="form-control form-control-sm"
+                                                       placeholder="Student email address..."
+                                                       value="@(_directAssignEmails.GetValueOrDefault(topic.Id, string.Empty))"
+                                                       @oninput="args => _directAssignEmails[topic.Id] = args.Value?.ToString() ?? string.Empty"
+                                                       disabled="@_topicActionInProgressIds.Contains(topic.Id)" />
+                                                <button class="btn btn-outline-primary btn-sm flex-shrink-0"
+                                                        @onclick="() => DirectAssignStudentAsync(topic.Id)"
+                                                        disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                                    <span class="bi bi-person-check me-1"></span> Assign
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 }
 
@@ -307,6 +328,22 @@
                                     {
                                         <button class="btn btn-outline-secondary btn-sm" @onclick="() => ArchiveTopic(topic.Id)">
                                             <span class="bi bi-archive me-1"></span> Archive
+                                        </button>
+                                    }
+                                    @if (IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Open)
+                                    {
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                @onclick="() => DeleteOpenTopicAsync(topic.Id)"
+                                                disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                            <span class="bi bi-trash me-1"></span> Delete
+                                        </button>
+                                    }
+                                    @if (IsCurrentProfessorInCharge(topic) && topic.Status == TopicStatus.Ongoing)
+                                    {
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                @onclick="() => RemoveAssignedStudentAsync(topic.Id)"
+                                                disabled="@_topicActionInProgressIds.Contains(topic.Id)">
+                                            <span class="bi bi-person-x me-1"></span> Remove Student
                                         </button>
                                     }
                                 }
@@ -364,19 +401,54 @@
 
     private static readonly string[] ResearchAreas =
     {
-        "Artificial Intelligence", "Computer Networks", "Cybersecurity",
-        "Embedded Systems", "Energy Systems", "Human-Computer Interaction",
-        "Internet of Things", "Signal Processing", "Software Engineering",
-        "Telecommunications",
+        "Ενεργειακών Συστημάτων",
+        "Σημάτων, Τηλεπικοινωνιών και Δικτύων",
+        "Ηλεκτρονικής, Υπολογιστών και Συστημάτων",
+        "Πληροφορικής",
     };
 
+    // Maps display name → demo account (pages 30-38 of the department curriculum document)
     private readonly Dictionary<string, string> _professorNameToAccount = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Prof. Λάμπρου"] = "prof1@univ.edu",
-        ["Assoc. Prof. Σταθοπούλου"] = "prof2@univ.edu",
-        ["Assist. Prof. Παπαδόπουλος"] = "prof3@univ.edu",
-        ["Lecturer Μανιάτη"] = "prof4@univ.edu",
+        // ── Demo accounts ──────────────────────────────────────────────────────────
+        ["Καθ. Βλαχόπουλος"]   = "prof1@univ.edu",   // Βλαχόπουλος Πέτρος
+        ["Αναπλ. Παρασκευάς"]  = "prof2@univ.edu",   // Παρασκευάς Μιχαήλ
+        ["Καθ. Ταμπακάς"]      = "prof3@univ.edu",   // Ταμπακάς Βασίλειος
+        ["Αναπλ. Κίτσος"]      = "prof4@univ.edu",   // Κίτσος Παρασκευάς
+        // ── Additional faculty (no demo account) ──────────────────────────────────
+        ["Επίκ. Αλεφραγκής"]   = "",
+        ["Λεκτ. Αντωνόπουλος Γ."] = "",
+        ["Επίκ. Αντωνόπουλος Χ."] = "",
+        ["Λεκτ. Ασημακόπουλος"] = "",
+        ["Καθ. Βώρος"]          = "",
+        ["Επίκ. Γεωργάκας"]    = "",
+        ["Καθ. Δροσόπουλος"]   = "",
+        ["Καθ. Δρόσος"]        = "",
+        ["Καθ. Ζαχαράκης"]     = "",
+        ["Επίκ. Ζέρβας"]       = "",
+        ["Επίκ. Καρέλης"]      = "",
+        ["Καθ. Καψάλης"]       = "",
+        ["Καθ. Κούγιας"]       = "",
+        ["Αναπλ. Κούτρας"]     = "",
+        ["Καθ. Μπισδούνης"]    = "",
+        ["Αναπλ. Πετρέλλης"]   = "",
+        ["Επίκ. Πολίτη"]       = "",
+        ["Επίκ. Σουλιώτης"]    = "",
+        ["Καθ. Σταθάτος"]      = "",
+        ["Καθ. Συρμακέσης"]    = "",
+        ["Επίκ. Σχοινάς"]      = "",
+        ["Επίκ. Σωτηρόπουλος"] = "",
+        ["Αναπλ. Τζήμας"]      = "",
+        ["Καθ. Τριανταφύλλου"] = "",
+        ["Αναπλ. Τσακνάκης"]   = "",
+        ["Καθ. Χαδέλης"]       = "",
+        ["Επίκ. Χαραλαμπάκος"] = "",
+        ["Επίκ. Χριστοδούλου"] = "",
+        ["Ομότ. Υφαντής"]      = "",
     };
+
+    // Professors loaded from the database (display name + email pairs for the dropdown)
+    private List<(string DisplayName, string Email)> _professorOptions = new();
 
     private sealed class ThesisTopic
     {
@@ -427,6 +499,7 @@
     private readonly TopicFormModel _form = new();
     private readonly Dictionary<string, string> _formErrors = new();
     private readonly HashSet<Guid> _topicActionInProgressIds = new();
+    private readonly Dictionary<Guid, string> _directAssignEmails = new();
 
     private bool _showForm;
     private Guid? _editingId;
@@ -443,6 +516,22 @@
     {
         SeedSampleTopics();
         await ApplyPersistedStateAsync();
+        await LoadProfessorOptionsAsync();
+    }
+
+    private async Task LoadProfessorOptionsAsync()
+    {
+        var emails = await TopicAssignmentService.GetAllProfessorEmailsAsync();
+        var emailToName = _professorNameToAccount
+            .Where(kvp => !string.IsNullOrEmpty(kvp.Value))
+            .GroupBy(kvp => kvp.Value, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Key, StringComparer.OrdinalIgnoreCase);
+        _professorOptions = emails
+            .Select(e => (
+                DisplayName: emailToName.TryGetValue(e, out var name) ? name : e,
+                Email: e))
+            .OrderBy(o => o.DisplayName)
+            .ToList();
     }
 
     private void SeedSampleTopics()
@@ -455,60 +544,60 @@
         _topics.Add(new ThesisTopic
         {
             Id = TopicIdFederatedLearning,
-            Title = "Federated Learning for Privacy-Preserving Medical Data Analysis",
-            Description = "Investigate federated learning architectures that allow hospitals to collaboratively train ML models without sharing raw patient data.",
+            Title = "Σχεδίαση Συστήματος Βιομηχανικής Αυτοματοποίησης με Αλγορίθμους Μηχανικής Μάθησης",
+            Description = "Μελέτη και υλοποίηση συστήματος ευφυούς βιομηχανικής αυτοματοποίησης που χρησιμοποιεί τεχνικές μηχανικής μάθησης για βελτιστοποίηση παραγωγικών διαδικασιών και προγνωστική συντήρηση εξοπλισμού.",
             Status = TopicStatus.Draft,
-            Area = "Artificial Intelligence",
-            SupervisingProfessor = "Prof. Λάμπρου",
+            Area = "Ηλεκτρονικής, Υπολογιστών και Συστημάτων",
+            SupervisingProfessor = "Καθ. Βλαχόπουλος",
             SupervisingProfessorAccount = "prof1@univ.edu",
-            Prerequisites = "Machine Learning, Python, Basic Statistics",
+            Prerequisites = "Ψηφιακά Συστήματα, Python, Βασικές αρχές ML",
             MaxStudents = 1,
-            ProposedBy = "Prof. Λάμπρου",
+            ProposedBy = "Καθ. Βλαχόπουλος",
             ProposedOn = DateTime.UtcNow.AddDays(-3),
         });
 
         _topics.Add(new ThesisTopic
         {
             Id = TopicIdNetworkSlicing,
-            Title = "5G Network Slicing for Industrial IoT Applications",
-            Description = "Design and evaluate a network slicing framework tailored to latency-critical Industrial IoT use cases.",
+            Title = "5G Network Slicing για Βιομηχανικές Εφαρμογές IoT",
+            Description = "Σχεδιασμός και αξιολόγηση πλαισίου network slicing προσαρμοσμένου σε βιομηχανικές εφαρμογές IoT με αυστηρές απαιτήσεις καθυστέρησης, χρησιμοποιώντας τεχνικές επεξεργασίας σήματος και διαχείρισης δικτύων 5G.",
             Status = TopicStatus.Open,
-            Area = "Telecommunications",
-            SupervisingProfessor = "Assoc. Prof. Σταθοπούλου",
+            Area = "Σημάτων, Τηλεπικοινωνιών και Δικτύων",
+            SupervisingProfessor = "Αναπλ. Παρασκευάς",
             SupervisingProfessorAccount = "prof2@univ.edu",
-            Prerequisites = "Computer Networks, Linux",
+            Prerequisites = "Δίκτυα Υπολογιστών, Ψηφιακές Επικοινωνίες",
             MaxStudents = 2,
-            ProposedBy = "Assoc. Prof. Σταθοπούλου",
+            ProposedBy = "Αναπλ. Παρασκευάς",
             ProposedOn = DateTime.UtcNow.AddDays(-14),
         });
 
         _topics.Add(new ThesisTopic
         {
             Id = TopicIdSmartGrid,
-            Title = "Smart Grid Demand Forecasting with Transformer Models",
-            Description = "Apply Transformer-based sequence models to short-term electricity demand forecasting for distribution grids.",
+            Title = "Πρόβλεψη Ζήτησης Ηλεκτρικής Ενέργειας με Μοντέλα Βαθιάς Μάθησης",
+            Description = "Εφαρμογή μοντέλων ακολουθίας βαθιάς μάθησης για βραχυπρόθεσμη πρόβλεψη ζήτησης ηλεκτρικής ενέργειας σε δίκτυα διανομής, με στόχο τη βέλτιστη οικονομική διαχείριση της ηλεκτρικής ενέργειας.",
             Status = TopicStatus.Open,
-            Area = "Energy Systems",
-            SupervisingProfessor = "Prof. Λάμπρου",
+            Area = "Ενεργειακών Συστημάτων",
+            SupervisingProfessor = "Καθ. Βλαχόπουλος",
             SupervisingProfessorAccount = "prof1@univ.edu",
-            Prerequisites = "Linear Algebra, Python, Time-Series basics",
+            Prerequisites = "Γραμμική Άλγεβρα, Python, Βασικές αρχές χρονοσειρών",
             MaxStudents = 1,
-            ProposedBy = "Prof. Λάμπρου",
+            ProposedBy = "Καθ. Βλαχόπουλος",
             ProposedOn = DateTime.UtcNow.AddDays(-21),
         });
 
         _topics.Add(new ThesisTopic
         {
             Id = TopicIdExplainability,
-            Title = "Explainability Techniques for Neural Network Classifiers",
-            Description = "Survey and implement state-of-the-art explainability methods for image and tabular classifiers.",
+            Title = "Κατανεμημένη Επεξεργασία Μεγάλων Δεδομένων με Αλγορίθμους Εξόρυξης Γνώσης",
+            Description = "Σχεδιασμός και υλοποίηση κατανεμημένου συστήματος επεξεργασίας μεγάλων δεδομένων με χρήση αλγορίθμων εξόρυξης γνώσης και μηχανικής μάθησης για ανάλυση δεδομένων μεγάλης κλίμακας.",
             Status = TopicStatus.Archived,
-            Area = "Artificial Intelligence",
-            SupervisingProfessor = "Assoc. Prof. Σταθοπούλου",
-            SupervisingProfessorAccount = "prof2@univ.edu",
-            Prerequisites = "Deep Learning, Python",
+            Area = "Πληροφορικής",
+            SupervisingProfessor = "Καθ. Ταμπακάς",
+            SupervisingProfessorAccount = "prof3@univ.edu",
+            Prerequisites = "Κατανεμημένα Συστήματα, Python, Βάσεις Δεδομένων",
             MaxStudents = 1,
-            ProposedBy = "Assoc. Prof. Σταθοπούλου",
+            ProposedBy = "Καθ. Ταμπακάς",
             ProposedOn = DateTime.UtcNow.AddDays(-30),
         });
     }
@@ -626,6 +715,15 @@
         _editingId = null;
         _formErrors.Clear();
         _showForm = true;
+
+        if (Session.Role == UserRole.Professor)
+        {
+            var account = CurrentAccount;
+            var opt = _professorOptions.FirstOrDefault(o =>
+                string.Equals(o.Email, account, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(opt.Email))
+                _form.SupervisingProfessor = opt.DisplayName;
+        }
     }
 
     private void CancelForm()
@@ -781,6 +879,28 @@
         _errorMessage = null;
     }
 
+    private async Task DeleteOpenTopicAsync(Guid id)
+    {
+        var topic = _topics.FirstOrDefault(x => x.Id == id);
+        if (topic is null || topic.Status != TopicStatus.Open || !IsCurrentProfessorInCharge(topic))
+        {
+            return;
+        }
+
+        _topicActionInProgressIds.Add(id);
+        try
+        {
+            await InterestService.ClearTopicInterestsAsync(topic.Id);
+            _topics.Remove(topic);
+            _successMessage = $"Topic '{topic.Title}' deleted.";
+            _errorMessage = null;
+        }
+        finally
+        {
+            _topicActionInProgressIds.Remove(id);
+        }
+    }
+
     private bool HasCurrentStudentExpressedInterest(ThesisTopic topic)
     {
         if (Session.Role != UserRole.Student)
@@ -908,6 +1028,81 @@
     }
 
     private static string NormalizeAccount(string? value) => (value ?? string.Empty).Trim().ToLowerInvariant();
+
+    private async Task DirectAssignStudentAsync(Guid topicId)
+    {
+        if (Session.Role != UserRole.Professor) return;
+
+        var topic = _topics.FirstOrDefault(x => x.Id == topicId);
+        if (topic is null || !IsCurrentProfessorInCharge(topic)) return;
+
+        if (!_directAssignEmails.TryGetValue(topicId, out var studentEmail) || string.IsNullOrWhiteSpace(studentEmail))
+        {
+            _errorMessage = "Please enter a student email address.";
+            _successMessage = null;
+            return;
+        }
+
+        _topicActionInProgressIds.Add(topicId);
+        try
+        {
+            var result = await TopicAssignmentService.AssignTopicAsync(
+                topic.Id,
+                topic.Title,
+                studentEmail.Trim(),
+                topic.SupervisingProfessorAccount);
+
+            if (!result.Success)
+            {
+                _errorMessage = result.Error ?? "Unable to assign the student.";
+                _successMessage = null;
+                return;
+            }
+
+            await InterestService.RemoveInterestAsync(topicId, studentEmail.Trim());
+            await ApplyPersistedStateAsync();
+
+            topic.Status = TopicStatus.Ongoing;
+            topic.AssignedStudentAccount = NormalizeAccount(studentEmail);
+            _directAssignEmails.Remove(topicId);
+            _successMessage = $"'{topic.Title}' assigned to {NormalizeAccount(studentEmail)}.";
+            _errorMessage = null;
+        }
+        finally
+        {
+            _topicActionInProgressIds.Remove(topicId);
+        }
+    }
+
+    private async Task RemoveAssignedStudentAsync(Guid topicId)
+    {
+        if (Session.Role != UserRole.Professor) return;
+
+        var topic = _topics.FirstOrDefault(x => x.Id == topicId);
+        if (topic is null || !IsCurrentProfessorInCharge(topic)) return;
+
+        _topicActionInProgressIds.Add(topicId);
+        try
+        {
+            var result = await TopicAssignmentService.RemoveAssignmentAsync(topic.Id);
+
+            if (!result.Success)
+            {
+                _errorMessage = result.Error ?? "Unable to remove the assignment.";
+                _successMessage = null;
+                return;
+            }
+
+            topic.Status = TopicStatus.Open;
+            topic.AssignedStudentAccount = null;
+            _successMessage = $"Assignment removed. '{topic.Title}' is now Open.";
+            _errorMessage = null;
+        }
+        finally
+        {
+            _topicActionInProgressIds.Remove(topicId);
+        }
+    }
 
     private static string StatusBadgeClass(string status) => status switch
     {

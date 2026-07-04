@@ -124,7 +124,6 @@
         <h2 class="h4 fw-semibold mb-3">Thesis Shortcuts</h2>
         <div class="d-flex flex-wrap gap-2">
             <NavLink class="btn btn-outline-primary btn-sm" href="@TimelineLink">Update timeline</NavLink>
-            <NavLink class="btn btn-outline-primary btn-sm" href="@FileLibraryLink">File library</NavLink>
             <NavLink class="btn btn-outline-primary btn-sm" href="@MeetingsLink">Meeting scheduler</NavLink>
         </div>
     </section>
@@ -159,11 +158,6 @@
         => dashboard.ActiveTheses.Count == 0 || dashboard.StudentId is null
             ? "updates"
             : $"updates?thesisId={dashboard.ActiveTheses[0].TopicId}&authorId={dashboard.StudentId.Value}";
-
-    private string FileLibraryLink
-        => dashboard.ActiveTheses.Count == 0 || dashboard.StudentId is null
-            ? "file-library"
-            : $"file-library?thesisId={dashboard.ActiveTheses[0].TopicId}&authorId={dashboard.StudentId.Value}";
 
     private string MeetingsLink
         => dashboard.ActiveTheses.Count == 0 || dashboard.StudentId is null

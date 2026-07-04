@@ -1,28 +1,21 @@
 ﻿@page "/"
+@using Microsoft.EntityFrameworkCore
+@using University.Domain.Enums
 @inject UserSessionService Session
 @inject NavigationManager Nav
+@inject University.Infrastructure.Data.UniversityDbContext Db
 
-@if (!Session.IsAuthenticated)
+@if (!_sessionReady)
 {
     <div class="container page-section">
         <div class="card info-card">
             <div class="card-body">
-                <p class="mb-0 text-muted">Redirecting to login...</p>
+                <p class="mb-0 text-muted">Loading...</p>
             </div>
         </div>
     </div>
 }
-else if (Session.Role == UserRole.Student)
-{
-    <div class="container page-section">
-        <div class="card info-card">
-            <div class="card-body">
-                <p class="mb-0 text-muted">Redirecting to your dashboard...</p>
-            </div>
-        </div>
-    </div>
-}
-else
+else if (Session.Role == UserRole.Professor)
 {
 <div class="container page-section">
     <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between mb-4">
@@ -38,30 +31,41 @@ else
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-3 col-6">
-            <div class="metric-card">
-                <div class="metric-value">6</div>
-                <div class="metric-label">Active Supervisions</div>
+        @if (_isLoadingMetrics)
+        {
+            <div class="col-12">
+                <div class="card info-card">
+                    <div class="card-body text-muted">Loading metrics...</div>
+                </div>
             </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="metric-card">
-                <div class="metric-value">4</div>
-                <div class="metric-label">Pending Topic Reviews</div>
+        }
+        else
+        {
+            <div class="col-md-3 col-6">
+                <div class="metric-card">
+                    <div class="metric-value">@_activeSupervisions</div>
+                    <div class="metric-label">Active Supervisions</div>
+                </div>
             </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="metric-card">
-                <div class="metric-value">9</div>
-                <div class="metric-label">Upcoming Meetings</div>
+            <div class="col-md-3 col-6">
+                <div class="metric-card">
+                    <div class="metric-value">@_pendingReviews</div>
+                    <div class="metric-label">Pending Reviews</div>
+                </div>
             </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="metric-card">
-                <div class="metric-value">3</div>
-                <div class="metric-label">Reservation Requests</div>
+            <div class="col-md-3 col-6">
+                <div class="metric-card">
+                    <div class="metric-value">@_upcomingMeetings</div>
+                    <div class="metric-label">Upcoming Meetings</div>
+                </div>
             </div>
-        </div>
+            <div class="col-md-3 col-6">
+                <div class="metric-card">
+                    <div class="metric-value">@_reservationRequests</div>
+                    <div class="metric-label">Reservation Requests</div>
+                </div>
+            </div>
+        }
     </div>
 
     <div class="row g-4">
@@ -69,11 +73,7 @@ else
             <div class="card info-card h-100">
                 <div class="card-body">
                     <h2 class="h5 fw-semibold mb-3">Today</h2>
-                    <ul class="mb-0 text-muted">
-                        <li>Review 2 pending thesis topic suggestions.</li>
-                        <li>Confirm 1 meeting reservation from student queue.</li>
-                        <li>Send meeting invite to a reserved slot.</li>
-                    </ul>
+                    <p class="mb-0 text-muted">No tasks today.</p>
                 </div>
             </div>
         </div>
@@ -94,13 +94,83 @@ else
 }
 
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender) return;
+    private bool _sessionReady = false;
+    private bool _isLoadingMetrics = true;
+    private int _activeSupervisions;
+    private int _pendingReviews;
+    private int _upcomingMeetings;
+    private int _reservationRequests;
 
-        if (!Session.IsAuthenticated)
-            Nav.NavigateTo("/login", forceLoad: false);
-        else if (Session.Role == UserRole.Student)
+    protected override async Task OnInitializedAsync()
+    {
+        if (Session.Role == UserRole.Student)
+        {
+            _sessionReady = true;
+            return;
+        }
+
+        _sessionReady = true;
+
+        if (Session.Role == UserRole.Professor)
+        {
+            await LoadProfessorMetricsAsync();
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Session.Role == UserRole.Student)
             Nav.NavigateTo("/dashboard", forceLoad: false);
     }
+
+    private async Task LoadProfessorMetricsAsync()
+    {
+        var email = (Session.UserName ?? string.Empty).Trim().ToUpperInvariant();
+
+        var userId = await Db.Users
+            .AsNoTracking()
+            .Where(u => u.NormalizedEmail == email || u.NormalizedUserName == email)
+            .Select(u => u.Id)
+            .FirstOrDefaultAsync();
+
+        if (userId is null)
+        {
+            _isLoadingMetrics = false;
+            return;
+        }
+
+        var professorId = await Db.Professors
+            .AsNoTracking()
+            .Where(p => p.UserId == userId)
+            .Select(p => (int?)p.Id)
+            .FirstOrDefaultAsync();
+
+        if (professorId is null)
+        {
+            _isLoadingMetrics = false;
+            return;
+        }
+
+        _activeSupervisions = await Db.Assignments
+            .AsNoTracking()
+            .CountAsync(a => a.ProfessorId == professorId.Value);
+
+        var supervisedStudentIds = await Db.Assignments
+            .AsNoTracking()
+            .Where(a => a.ProfessorId == professorId.Value)
+            .Select(a => a.StudentId)
+            .ToListAsync();
+
+        _pendingReviews = await Db.ThesisUpdates
+            .AsNoTracking()
+            .CountAsync(tu => supervisedStudentIds.Contains(tu.StudentId)
+                              && tu.Status == UpdateStatus.Submitted);
+
+        // No Meetings or ReservationRequests tables in domain model yet.
+        _upcomingMeetings = 0;
+        _reservationRequests = 0;
+
+        _isLoadingMetrics = false;
+    }
 }
+
