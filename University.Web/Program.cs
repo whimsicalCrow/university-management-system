@@ -80,6 +80,7 @@ builder.Services.AddScoped<University.Application.Interfaces.IThesisUpdateReposi
 
 builder.Services.AddScoped<UserSessionService>();
 builder.Services.AddSingleton<IThesisInterestService, ThesisInterestService>();
+builder.Services.AddSingleton<IThesisNotificationService, ThesisNotificationService>();
 builder.Services.AddScoped<IThesisTopicAssignmentService, ThesisTopicAssignmentService>();
 builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
 builder.Services.AddScoped<University.Web.Services.IThesisTimelineService,

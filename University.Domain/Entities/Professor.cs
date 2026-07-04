@@ -14,6 +14,11 @@ public class Professor : BaseEntity
     public string UserId { get; internal set; } = string.Empty;
 
     /// <summary>
+    /// Gets the professor's display name (e.g. "Επίκ. Χριστοδούλου").
+    /// </summary>
+    public string Name { get; internal set; } = string.Empty;
+
+    /// <summary>
     /// Gets the department where the professor works.
     /// </summary>
     public string Department { get; internal set; } = string.Empty;

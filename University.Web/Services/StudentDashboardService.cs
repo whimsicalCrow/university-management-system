@@ -104,19 +104,7 @@ public sealed class StudentDashboardService : IStudentDashboardService
                     assignment.TopicTitle,
                     assignment.Status,
                     assignment.AssignedOn,
-                    SupervisorUserId = professor.UserId,
-                })
-            .GroupJoin(
-                _db.Users.AsNoTracking(),
-                left => left.SupervisorUserId,
-                user => user.Id,
-                (left, users) => new
-                {
-                    left.TopicId,
-                    left.TopicTitle,
-                    left.Status,
-                    left.AssignedOn,
-                    SupervisorName = users.Select(u => u.Email).FirstOrDefault(),
+                    SupervisorName = professor.Name,
                 })
             .ToListAsync(cancellationToken);
 

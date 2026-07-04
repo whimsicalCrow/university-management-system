@@ -43,13 +43,13 @@
         <div class="card info-card">
             <div class="card-body text-center py-5">
                 <span class="bi bi-journal-x mb-3" style="font-size:2.5rem; display:block; opacity:.4;"></span>
-                <h2 class="h5 fw-semibold mb-2">No thesis assigned yet</h2>
+                <h2 class="h5 fw-semibold mb-2">Δεν έχει ανατεθεί ακόμη θέμα</h2>
                 <p class="text-muted mb-4">
-                    You haven't been assigned to a thesis topic. Visit Thesis Topics to browse available topics and express your interest.
+                    Δεν έχετε ανατεθεί σε κάποιο θέμα διπλωματικής. Επισκεφθείτε τα Θέματα για να περιηγηθείτε στα διαθέσιμα θέματα και να εκδηλώσετε ενδιαφέρον.
                 </p>
                 <a class="btn btn-primary" href="thesis-topics">
                     <span class="bi bi-lightbulb me-1"></span>
-                    Browse Thesis Topics
+                    Περιήγηση Θεμάτων
                 </a>
             </div>
         </div>
@@ -62,17 +62,17 @@
             <div class="card info-card">
                 <div class="card-body text-center py-5">
                     <span class="bi bi-people mb-3" style="font-size:2.5rem; display:block; opacity:.4;"></span>
-                    <h2 class="h5 fw-semibold mb-2">No ongoing theses</h2>
-                    <p class="text-muted mb-0">You don't have any students assigned to a thesis yet. Go to Thesis Topics to assign a student.</p>
+                    <h2 class="h5 fw-semibold mb-2">Δεν υπάρχουν ενεργές διπλωματικές</h2>
+                    <p class="text-muted mb-0">Δεν έχετε ακόμη φοιτητές ανατεθειμένους σε κάποιο θέμα. Μεταβείτε στα Θέματα Διπλωματικής για να αναθέσετε φοιτητή.</p>
                     <a class="btn btn-outline-primary mt-3" href="thesis-topics">
-                        <span class="bi bi-lightbulb me-1"></span> Thesis Topics
+                        <span class="bi bi-lightbulb me-1"></span> Θέματα Διπλωματικής
                     </a>
                 </div>
             </div>
         }
         else
         {
-            <p class="text-muted mb-3">Select a thesis to view and review the student's updates.</p>
+            <p class="text-muted mb-3">Επιλέξτε διπλωματική για προβολή και αξιολόγηση ενημερώσεων φοιτητή.</p>
             <div class="d-flex flex-column gap-3">
                 @foreach (var thesis in _professorTheses)
                 {
@@ -83,11 +83,11 @@
                                 <div class="small text-muted">
                                     <span class="bi bi-person-circle me-1"></span>@thesis.StudentEmail
                                     &nbsp;·&nbsp;
-                                    <span class="bi bi-calendar3 me-1"></span>Assigned @thesis.AssignedOn.ToString("dd MMM yyyy")
+                                    <span class="bi bi-calendar3 me-1"></span>Ανατέθηκε @thesis.AssignedOn.ToString("dd MMM yyyy")
                                 </div>
                             </div>
                             <button class="btn btn-primary btn-sm flex-shrink-0" @onclick="() => SelectThesisAsync(thesis)">
-                                <span class="bi bi-journal-text me-1"></span> View Updates
+                                <span class="bi bi-journal-text me-1"></span> Προβολή Ενημερώσεων
                             </button>
                         </div>
                     </div>
@@ -102,7 +102,7 @@
         {
             <div class="mb-4 d-flex align-items-center gap-3">
                 <button class="btn btn-outline-secondary btn-sm" @onclick="BackToThesisList">
-                    <span class="bi bi-arrow-left me-1"></span> Back to thesis list
+                    <span class="bi bi-arrow-left me-1"></span> Πίσω στη λίστα διπλωματικών
                 </button>
                 <div>
                     <span class="fw-semibold">@_selectedThesis.TopicTitle</span>
@@ -149,7 +149,7 @@
                                       disabled="@isSaving"></textarea>
 
                             <div class="attachment-panel mt-3">
-                                <label class="form-label fw-semibold mb-2">Attachment (PDF, DOCX, PPTX, ZIP)</label>
+                                <label class="form-label fw-semibold mb-2">Συνημμένο (PDF, DOCX, PPTX, ZIP)</label>
                                 <InputFile OnChange="OnAttachmentSelected"
                                            accept=".pdf,.docx,.pptx,.zip"
                                            disabled="@isSaving"
@@ -228,7 +228,7 @@
                             <option value="">Όλες οι καταστάσεις</option>
                             @foreach (var status in FilterableStatuses)
                             {
-                                <option value="@status" selected="@status.Equals(statusFilter, StringComparison.OrdinalIgnoreCase)">@status</option>
+                                <option value="@status" selected="@status.Equals(statusFilter, StringComparison.OrdinalIgnoreCase)">@DisplayUpdateStatus(status)</option>
                             }
                         </select>
                         @if (IsSupervisorView)
@@ -264,7 +264,7 @@
                                 <div class="card-body">
                                     <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
                                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                                            <span class="@StatusBadgeClass(item.Status)">@item.Status</span>
+                                            <span class="@StatusBadgeClass(item.Status)">@DisplayUpdateStatus(item.Status)</span>
                                             <span class="timeline-date">@FormatDate(item.OccurredOn)</span>
                                             @if (WasEdited(item))
                                             {
@@ -304,7 +304,7 @@
                                     @if (item.ProfessorComments.Count > 0)
                                     {
                                         <div class="mt-3 p-3 border rounded bg-light-subtle">
-                                            <div class="small text-uppercase text-muted fw-semibold mb-2">Professor comments</div>
+                                            <div class="small text-uppercase text-muted fw-semibold mb-2">Σχόλια καθηγητή</div>
                                             @foreach (var comment in item.ProfessorComments.OrderByDescending(c => c.CreatedOn))
                                             {
                                                 <div class="mb-2">
@@ -318,14 +318,14 @@
                                     @if (IsSupervisorView)
                                     {
                                         <details class="mt-3 p-3 border rounded">
-                                            <summary class="small text-uppercase text-muted fw-semibold mb-2">Review update</summary>
+                                            <summary class="small text-uppercase text-muted fw-semibold mb-2">Αξιολόγηση ενημέρωσης</summary>
                                             <div class="d-flex flex-column gap-2 mt-2">
                                                 <select class="form-select form-select-sm"
                                                         value="@GetProfessorStatusSelection(item.Id, item.Status)"
                                                         @onchange="args => OnProfessorStatusChanged(item.Id, args)">
                                                     @foreach (var reviewStatus in ReviewableStatuses)
                                                     {
-                                                        <option value="@reviewStatus">@reviewStatus</option>
+                                                        <option value="@reviewStatus">@DisplayUpdateStatus(reviewStatus)</option>
                                                     }
                                                 </select>
                                                 <textarea class="form-control"
@@ -335,7 +335,7 @@
                                                           @oninput="args => OnProfessorCommentInput(item.Id, args)"></textarea>
                                                 <button type="button" class="btn btn-sm btn-primary align-self-start" @onclick="() => ApplyProfessorReviewAsync(item.Id)">
                                                     <span class="bi bi-check2-circle me-1"></span>
-                                                    Submit review
+                                                    Υποβολή αξιολόγησης
                                                 </button>
                                             </div>
                                         </details>
@@ -835,6 +835,14 @@
         var v when v.Equals(ThesisUpdateStatuses.Draft,       StringComparison.OrdinalIgnoreCase) => "badge status-badge status-draft",
         _ => "badge status-badge",
     };
+
+    private static string DisplayUpdateStatus(string status)
+    {
+        if (status.Equals(ThesisUpdateStatuses.Draft,       StringComparison.OrdinalIgnoreCase)) return "Πρόχειρο";
+        if (status.Equals(ThesisUpdateStatuses.UnderReview, StringComparison.OrdinalIgnoreCase)) return "Υπό Αξιολόγηση";
+        if (status.Equals(ThesisUpdateStatuses.Approved,    StringComparison.OrdinalIgnoreCase)) return "Εγκεκριμένο";
+        return status;
+    }
 
     private static string FormatFileSize(long bytes)
     {

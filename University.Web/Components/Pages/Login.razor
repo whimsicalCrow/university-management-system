@@ -17,8 +17,8 @@
                     <text x="24" y="28" text-anchor="middle" fill="white" font-size="14" font-family="Manrope, Open Sans, sans-serif" font-weight="700">TC</text>
                 </svg>
             </div>
-            <h1 class="login-title">Thesis Collaboration</h1>
-            <p class="login-subtitle">Sign in to continue</p>
+            <h1 class="login-title">Σύστημα Διαχείρισης Διπλωματικών Εργασιών</h1>
+            <p class="login-subtitle">Συνδεθείτε για να συνεχίσετε</p>
         </div>
 
         @* ── Login Form ── *@
@@ -36,19 +36,19 @@
             </div>
 
             <div class="mb-3">
-                <label for="password" class="login-label">Password</label>
+                <label for="password" class="login-label">Κωδικός</label>
                 <input type="password" class="login-input w-100" id="password" placeholder="TempPass123!" @bind="password" />
             </div>
 
-            <button class="btn btn-login w-100 mt-4" @onclick="HandleLogin">Login</button>
-            <a class="login-help-link d-inline-block mt-3" href="#">Forgot your password?</a>
+            <button class="btn btn-login w-100 mt-4" @onclick="HandleLogin">Σύνδεση</button>
+            <a class="login-help-link d-inline-block mt-3" href="#">Ξεχάσατε τον κωδικό σας;</a>
         </div>
 
         @* ── Test Credentials ── *@
         <div class="login-demo mt-4">
-            <strong>Demo Credentials:</strong><br/>
-            Student: student1@univ.edu / TempPass123!<br/>
-            Professor: prof1@univ.edu / TempPass123!
+            <strong>Δοκιμαστικά Στοιχεία:</strong><br/>
+            Φοιτητής: student1@univ.edu / TempPass123!<br/>
+            Καθηγητής: prof1@univ.edu / TempPass123!
         </div>
 
     </div>
@@ -75,7 +75,7 @@
         {
             if (!Enum.TryParse<UserRole>(result.Role, ignoreCase: true, out var sessionRole))
             {
-                errorMessage = "Unable to determine account role.";
+                errorMessage = "Δεν ήταν δυνατός ο προσδιορισμός του ρόλου.";
                 return;
             }
 
@@ -88,7 +88,7 @@
         }
         else
         {
-            errorMessage = result.Message ?? "Login failed";
+            errorMessage = result.Message ?? "Αποτυχία σύνδεσης";
         }
     }
 

@@ -948,6 +948,37 @@ a:focus {
     color: #fff !important;
 }
 
+/* ── Notification bell ─────────────────────────────────────────────────────── */
+.nav-bell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.25rem;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.nav-bell:hover {
+    color: #fff;
+}
+
+.nav-bell-badge {
+    position: absolute;
+    top: -2px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 3px;
+    border-radius: 8px;
+    background: #dc3545;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+}
+
 /* ECE-like defaults for Bootstrap color usage */
 a:not(.btn) {
     color: var(--eclass-blue);
