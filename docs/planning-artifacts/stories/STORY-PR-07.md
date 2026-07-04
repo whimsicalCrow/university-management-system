@@ -3,7 +3,7 @@ title: "STORY-PR-07: Performance Load Tests — Golden Flow Critical Paths"
 epic: "Presentation Readiness"
 sprint: "Week 2 (2026-07-04 to 2026-07-10)"
 priority: "P1 - High"
-status: "review"
+status: "done"
 date_created: 2026-07-04
 baseline_commit: "6eafbd90a866366a8c4f3f472218869f476246b0"
 branch: "feature/pr-07-performance-tests"
@@ -183,25 +183,25 @@ docs/implementation-artifacts/
 ## Tasks / Subtasks
 
 ### Task 1: Write the k6 Script (AC1)
-- [ ] 1.1 Create `k6-performance-tests/` directory
-- [ ] 1.2 Write `k6-performance-tests/golden-flow.js` with ramp-up stages, full golden flow iteration, checks, and thresholds
-- [ ] 1.3 Add a README note to `k6-performance-tests/README.md` with install + run instructions
+- [x] 1.1 Create `k6-performance-tests/` directory
+- [x] 1.2 Write `k6-performance-tests/golden-flow.js` with ramp-up stages, full golden flow iteration, checks, and thresholds
+- [x] 1.3 Add a README note to `k6-performance-tests/README.md` with install + run instructions
 
 ### Task 2: Run the Test and Capture Metrics (AC2, AC3)
-- [ ] 2.1 Start the app via `.\scripts\start-demo.ps1` (or equivalent)
-- [ ] 2.2 Run `k6 run k6-performance-tests/golden-flow.js`
-- [ ] 2.3 Capture terminal output (full k6 summary)
-- [ ] 2.4 Verify all thresholds are green; note any amber/red results
+- [x] 2.1 Start the app via `.\scripts\start-demo.ps1` (or equivalent)
+- [x] 2.2 Run `k6 run k6-performance-tests/golden-flow.js`
+- [x] 2.3 Capture terminal output (full k6 summary)
+- [x] 2.4 Verify all thresholds are green; note any amber/red results
 
 ### Task 3: Write Performance Report (AC3)
-- [ ] 3.1 Create `docs/implementation-artifacts/pr-07-performance-report.md`
-- [ ] 3.2 Fill in run metadata (date, environment, VU count, duration)
-- [ ] 3.3 Paste k6 summary table and mark each threshold pass/fail
-- [ ] 3.4 Write observations and residual risk notes
+- [x] 3.1 Create `docs/implementation-artifacts/pr-07-performance-report.md`
+- [x] 3.2 Fill in run metadata (date, environment, VU count, duration)
+- [x] 3.3 Paste k6 summary table and mark each threshold pass/fail
+- [x] 3.4 Write observations and residual risk notes
 
 ### Task 4: Build + Test Gate (AC4)
-- [ ] 4.1 Run `dotnet build UniversitySystem.sln -c Release`
-- [ ] 4.2 Run `dotnet test` — confirm 97/97 pass
+- [x] 4.1 Run `dotnet build UniversitySystem.sln -c Release`
+- [x] 4.2 Run `dotnet test` — confirm 97/97 pass
 
 ---
 
