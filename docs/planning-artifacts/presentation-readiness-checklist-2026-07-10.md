@@ -44,10 +44,10 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 - [x] Add or update tests for upload/retrieval/failure.
 
 ### 2026-07-04
-- [ ] PR-03 feedback loop complete.
-- [ ] Verify professor feedback persistence and student visibility.
-- [ ] Branch: `feature/us-022-professor-feedback-loop` | Story: `docs/planning-artifacts/stories/STORY-US-022.md`
-- [ ] Add minimal notification/audit indicator if missing.
+- [x] PR-03 feedback loop complete.
+- [x] Verify professor feedback persistence and student visibility.
+- [x] Branch: `feature/us-022-professor-feedback-loop` | Story: `docs/planning-artifacts/stories/STORY-US-022.md`
+- [x] Add minimal notification/audit indicator if missing.
 
 ### 2026-07-05
 - [ ] PR-04 UX hardening complete.
