@@ -94,8 +94,10 @@ else
 }
 
 @code {
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender) return;
+
         if (!Session.IsAuthenticated)
             Nav.NavigateTo("/login", forceLoad: false);
         else if (Session.Role == UserRole.Student)

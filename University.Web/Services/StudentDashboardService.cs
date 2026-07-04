@@ -140,7 +140,7 @@ public sealed class StudentDashboardService : IStudentDashboardService
             .OrderBy(card => card.NextMilestoneDueOn)
             .ToList();
 
-        var feedback = await _db.Feedback
+        var rawFeedback = await _db.Feedback
             .AsNoTracking()
             .Join(
                 _db.ThesisUpdates.AsNoTracking().Where(u => u.StudentId == student.Id),
@@ -162,14 +162,20 @@ public sealed class StudentDashboardService : IStudentDashboardService
                 _db.Users.AsNoTracking(),
                 left => left.SupervisorUserId,
                 user => user.Id,
-                (left, users) => new DashboardCommentItem(
+                (left, users) => new
+                {
                     left.UpdateId,
-                    users.Select(u => u.Email ?? "Supervisor").FirstOrDefault() ?? "Supervisor",
                     left.Comment,
-                    left.SubmittedAt))
-            .OrderByDescending(c => c.CreatedOn)
+                    left.SubmittedAt,
+                    SupervisorName = users.Select(u => u.Email ?? "Supervisor").FirstOrDefault() ?? "Supervisor",
+                })
+            .OrderByDescending(c => c.SubmittedAt)
             .Take(5)
             .ToListAsync(cancellationToken);
+
+        var feedback = (IReadOnlyList<DashboardCommentItem>)rawFeedback
+            .Select(c => new DashboardCommentItem(c.UpdateId, c.SupervisorName, c.Comment, c.SubmittedAt))
+            .ToList();
 
         var actionItems = BuildActionItems(student.Id, thesisCards, updates);
         var fileRecords = await _db.ThesisArtifacts
