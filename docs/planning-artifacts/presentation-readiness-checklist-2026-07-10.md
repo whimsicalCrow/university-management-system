@@ -27,7 +27,7 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 | PR-05 | Reliability | Create clean startup/run script and verify from fresh terminal | Hermes | 2 | 2026-07-06 | done | None | Successful clean run commands |
 | PR-06 | Security | Run OWASP-focused checks and patch high-severity findings | Hermes | 4 | 2026-07-07 | done | None | Security findings table |
 | PR-07 | Performance | Execute load tests on critical paths and capture metrics | Hermes | 4 | 2026-07-08 | done | None | Response time and error-rate report |
-| PR-08 | Presentation | Build final deck, demo script, backup script, and fallback screenshots | Hermes | 5 | 2026-07-09 | not-started | None | Deck + runbook + backup assets |
+| PR-08 | Presentation | Build final deck, demo script, backup script, and fallback screenshots | Hermes | 5 | 2026-07-09 | done | None | Deck + runbook + backup assets |
 | PR-09 | Dress Rehearsal | Run full demo twice under timed conditions | Hermes | 2 | 2026-07-09 | not-started | None | Timing log and issue list |
 | PR-10 | Go/No-Go | Final readiness check and lock release candidate | Hermes | 1 | 2026-07-10 | not-started | None | Go decision record |
 
@@ -73,7 +73,7 @@ Deliver a reliable, end-to-end thesis workflow demo with supporting quality evid
 - [x] Capture and store metrics artifacts.
 
 ### 2026-07-09
-- [ ] PR-08 deck and demo assets finalized.
+- [x] PR-08 deck and demo assets finalized.
 - [ ] PR-09 two full rehearsals completed.
 - [ ] Freeze code except critical fixes.
 
@@ -105,7 +105,9 @@ All must be true:
 - 2026-07-04: PR-05 complete — `scripts/start-demo.ps1` created on branch `feature/pr-05-startup-script`. Script covers: `dotnet restore` → `dotnet build -c Release` (all 6 projects clean) → port 5118 conflict check (prints PID + kill command on conflict) → credential/URL banner → `dotnet run --launch-profile http --no-build`. Verified: `Invoke-WebRequest http://localhost:5118/login` returned HTTP 200 from a clean run.
 - 2026-07-04: PR-06 complete — OWASP security pass on branch `feature/pr-06-security-pass`. 4 HIGH findings patched: SEC-01 stored XSS (Markdig `.DisableHtml()`), SEC-02 role escalation via `?role=supervisor` (removed query param; `IsSupervisorView` from session only), SEC-03 IDOR via `?authorId=N` (gated on `IsSupervisorView`), SEC-04 missing `@attribute [Authorize]` on 5 pages + `ConfigureApplicationCookie(LoginPath="/login")`. 4 MEDIUM findings accepted (headers, antiforgery-disable, NoOp virus scan, dev password). 97/97 tests pass.
 - 2026-07-04: PR-07 complete — performance load tests on branch `feature/pr-07-performance-tests`. k6 script committed (`k6-performance-tests/golden-flow.js`); measurements run via PowerShell fallback (20 samples/endpoint). Results: login p95=89ms, page-load p95=175ms (`/updates`), 0 errors across 160 requests. All 4 thresholds PASS. Report: `docs/implementation-artifacts/pr-07-performance-report.md`. Correction: demo password is `TempPass123!` (not `Password123!`). 97/97 tests pass.
-- Deck and runbook path: fill on 2026-07-09.
+- 2026-07-04: Demo data alignment — professor dropdown (`ThesisTopics.razor`) updated with 5 real ΤΜΗΜΑ ΗΜΜΥ faculty (Χριστοδούλου→prof1, Πετρέλλης→prof2, Χαραλαμπάκος→prof3, Κούτρας→prof4, Τζήμας→prof5). `docs/demo-users.md` and `README.md` updated to match: full names, βαθμίδα, Γνωστικό Αντικείμενο, and all 15 student rows.
+- 2026-07-04: PR-08 complete — presentation assets committed. `pr-08-demo-script.md`: 29-step golden-flow script, pre-flight checklist, 12-minute timing budget, exact narration cues. `pr-08-presentation-outline.md`: 10-slide deck outline with speaker notes (Title, Problem, Architecture, Tech Stack, Features, Demo cue, Tests, Performance, Security, Conclusions) + 4 appendix Q&A slides. `pr-08-backup-plan.md`: 10-item pre-demo checklist, 5 failure scenarios with mitigations, 12 offline fallback screenshots list, emergency procedure.
+- Deck and runbook path: `docs/implementation-artifacts/pr-08-*.md` — filled 2026-07-04.
 
 ## Change Control
 Any proposed task added after 2026-07-05 requires:
