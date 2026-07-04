@@ -152,11 +152,11 @@ else if (Session.Role == UserRole.Professor)
             return;
         }
 
-        _activeSupervisions = await Db.Assignments
+        _activeSupervisions = await Db.ThesisTopicAssignments
             .AsNoTracking()
             .CountAsync(a => a.ProfessorId == professorId.Value);
 
-        var supervisedStudentIds = await Db.Assignments
+        var supervisedStudentIds = await Db.ThesisTopicAssignments
             .AsNoTracking()
             .Where(a => a.ProfessorId == professorId.Value)
             .Select(a => a.StudentId)
