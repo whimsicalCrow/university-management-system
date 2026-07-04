@@ -80,12 +80,37 @@ Server=127.0.0.1,1433;Database=UniversityDB;User Id=sa;Password=YourStrong!Passw
 
 ### Demo accounts
 
-Accounts are seeded automatically on first run. Use `Password123!` for all accounts.
+Accounts are seeded automatically on first run. **Password for all accounts: `TempPass123!`**
 
-| Role | Example email |
-|---|---|
-| Professor | `prof1@univ.edu` … `prof5@univ.edu` |
-| Student | `student1@univ.edu` … `student15@univ.edu` |
+**Professors** (Role: `Professor`) — ΤΜΗΜΑ ΗΜΜΥ, Πανεπιστήμιο Πελοποννήσου
+
+| Email | Full Name | Βαθμίδα | Γνωστικό Αντικείμενο |
+|-------|-----------|---------|----------------------|
+| `prof1@univ.edu` | Χριστοδούλου Σωτήριος | Επίκ. Καθηγητής | Τεχνολογία Λογισμικού για τον Παγκόσμιο Ιστό |
+| `prof2@univ.edu` | Πετρέλλης Νικόλαος | Αναπλ. Καθηγητής | Ενσωματωμένα Συστήματα |
+| `prof3@univ.edu` | Χαραλαμπάκος Βασίλειος | Επίκ. Καθηγητής | Ηλεκτρικά Συστήματα Ενέργειας |
+| `prof4@univ.edu` | Κούτρας Αθανάσιος | Αναπλ. Καθηγητής | Ψηφιακή Επεξεργασία Ήχου και Εικόνας |
+| `prof5@univ.edu` | Τζήμας Ιωάννης | Αναπλ. Καθηγητής | Δικτυοκεντρικά Πληροφοριακά Συστήματα |
+
+**Students** (Role: `Student`)
+
+| Email | Specialization | Supervisor |
+|-------|---------------|------------|
+| `student1@univ.edu` | Ηλεκτρονικής, Υπολογιστών και Συστημάτων | prof1 |
+| `student2@univ.edu` | Πληροφορικής | prof1 |
+| `student3@univ.edu` | Σημάτων, Τηλεπικοινωνιών και Δικτύων | prof1 |
+| `student4@univ.edu` | Πληροφορικής | prof2 |
+| `student5@univ.edu` | Ενεργειακών Συστημάτων | prof2 |
+| `student6@univ.edu` | Σημάτων, Τηλεπικοινωνιών και Δικτύων | prof2 |
+| `student7@univ.edu` | Ηλεκτρονικής, Υπολογιστών και Συστημάτων | prof3 |
+| `student8@univ.edu` | Σημάτων, Τηλεπικοινωνιών και Δικτύων | prof3 |
+| `student9@univ.edu` | Ενεργειακών Συστημάτων | prof3 |
+| `student10@univ.edu` | Πληροφορικής | prof4 |
+| `student11@univ.edu` | Ηλεκτρονικής, Υπολογιστών και Συστημάτων | prof4 |
+| `student12@univ.edu` | Ενεργειακών Συστημάτων | prof4 |
+| `student13@univ.edu` | Σημάτων, Τηλεπικοινωνιών και Δικτύων | prof5 |
+| `student14@univ.edu` | Πληροφορικής | prof5 |
+| `student15@univ.edu` | Ηλεκτρονικής, Υπολογιστών και Συστημάτων | prof5 |
 
 ### Attachment storage
 

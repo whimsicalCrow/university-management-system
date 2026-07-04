@@ -411,11 +411,12 @@
     // Maps display name → demo account (pages 30-38 of the department curriculum document)
     private readonly Dictionary<string, string> _professorNameToAccount = new(StringComparer.OrdinalIgnoreCase)
     {
-        // ── Demo accounts ──────────────────────────────────────────────────────────
-        ["Καθ. Βλαχόπουλος"]   = "prof1@univ.edu",   // Βλαχόπουλος Πέτρος
-        ["Αναπλ. Παρασκευάς"]  = "prof2@univ.edu",   // Παρασκευάς Μιχαήλ
-        ["Καθ. Ταμπακάς"]      = "prof3@univ.edu",   // Ταμπακάς Βασίλειος
-        ["Αναπλ. Κίτσος"]      = "prof4@univ.edu",   // Κίτσος Παρασκευάς
+        // ── Demo accounts (ΤΜΗΜΑ ΗΜΜΥ, Πανεπιστήμιο Πελοποννήσου) ──────────────────
+        ["Επίκ. Χριστοδούλου"] = "prof1@univ.edu",   // Χριστοδούλου Σωτήριος
+        ["Αναπλ. Πετρέλλης"]   = "prof2@univ.edu",   // Πετρέλλης Νικόλαος
+        ["Επίκ. Χαραλαμπάκος"] = "prof3@univ.edu",   // Χαραλαμπάκος Βασίλειος
+        ["Αναπλ. Κούτρας"]     = "prof4@univ.edu",   // Κούτρας Αθανάσιος
+        ["Αναπλ. Τζήμας"]      = "prof5@univ.edu",   // Τζήμας Ιωάννης
         // ── Additional faculty (no demo account) ──────────────────────────────────
         ["Επίκ. Αλεφραγκής"]   = "",
         ["Λεκτ. Αντωνόπουλος Γ."] = "",
@@ -430,21 +431,16 @@
         ["Επίκ. Καρέλης"]      = "",
         ["Καθ. Καψάλης"]       = "",
         ["Καθ. Κούγιας"]       = "",
-        ["Αναπλ. Κούτρας"]     = "",
         ["Καθ. Μπισδούνης"]    = "",
-        ["Αναπλ. Πετρέλλης"]   = "",
         ["Επίκ. Πολίτη"]       = "",
         ["Επίκ. Σουλιώτης"]    = "",
         ["Καθ. Σταθάτος"]      = "",
         ["Καθ. Συρμακέσης"]    = "",
         ["Επίκ. Σχοινάς"]      = "",
         ["Επίκ. Σωτηρόπουλος"] = "",
-        ["Αναπλ. Τζήμας"]      = "",
         ["Καθ. Τριανταφύλλου"] = "",
         ["Αναπλ. Τσακνάκης"]   = "",
         ["Καθ. Χαδέλης"]       = "",
-        ["Επίκ. Χαραλαμπάκος"] = "",
-        ["Επίκ. Χριστοδούλου"] = "",
         ["Ομότ. Υφαντής"]      = "",
     };
 
@@ -549,11 +545,11 @@
             Description = "Μελέτη και υλοποίηση συστήματος ευφυούς βιομηχανικής αυτοματοποίησης που χρησιμοποιεί τεχνικές μηχανικής μάθησης για βελτιστοποίηση παραγωγικών διαδικασιών και προγνωστική συντήρηση εξοπλισμού.",
             Status = TopicStatus.Draft,
             Area = "Ηλεκτρονικής, Υπολογιστών και Συστημάτων",
-            SupervisingProfessor = "Καθ. Βλαχόπουλος",
+            SupervisingProfessor = "Επίκ. Χριστοδούλου",
             SupervisingProfessorAccount = "prof1@univ.edu",
             Prerequisites = "Ψηφιακά Συστήματα, Python, Βασικές αρχές ML",
             MaxStudents = 1,
-            ProposedBy = "Καθ. Βλαχόπουλος",
+            ProposedBy = "Επίκ. Χριστοδούλου",
             ProposedOn = DateTime.UtcNow.AddDays(-3),
         });
 
@@ -564,11 +560,11 @@
             Description = "Σχεδιασμός και αξιολόγηση πλαισίου network slicing προσαρμοσμένου σε βιομηχανικές εφαρμογές IoT με αυστηρές απαιτήσεις καθυστέρησης, χρησιμοποιώντας τεχνικές επεξεργασίας σήματος και διαχείρισης δικτύων 5G.",
             Status = TopicStatus.Open,
             Area = "Σημάτων, Τηλεπικοινωνιών και Δικτύων",
-            SupervisingProfessor = "Αναπλ. Παρασκευάς",
+            SupervisingProfessor = "Αναπλ. Πετρέλλης",
             SupervisingProfessorAccount = "prof2@univ.edu",
             Prerequisites = "Δίκτυα Υπολογιστών, Ψηφιακές Επικοινωνίες",
             MaxStudents = 2,
-            ProposedBy = "Αναπλ. Παρασκευάς",
+            ProposedBy = "Αναπλ. Πετρέλλης",
             ProposedOn = DateTime.UtcNow.AddDays(-14),
         });
 
@@ -579,11 +575,11 @@
             Description = "Εφαρμογή μοντέλων ακολουθίας βαθιάς μάθησης για βραχυπρόθεσμη πρόβλεψη ζήτησης ηλεκτρικής ενέργειας σε δίκτυα διανομής, με στόχο τη βέλτιστη οικονομική διαχείριση της ηλεκτρικής ενέργειας.",
             Status = TopicStatus.Open,
             Area = "Ενεργειακών Συστημάτων",
-            SupervisingProfessor = "Καθ. Βλαχόπουλος",
+            SupervisingProfessor = "Επίκ. Χριστοδούλου",
             SupervisingProfessorAccount = "prof1@univ.edu",
             Prerequisites = "Γραμμική Άλγεβρα, Python, Βασικές αρχές χρονοσειρών",
             MaxStudents = 1,
-            ProposedBy = "Καθ. Βλαχόπουλος",
+            ProposedBy = "Επίκ. Χριστοδούλου",
             ProposedOn = DateTime.UtcNow.AddDays(-21),
         });
 
@@ -594,11 +590,11 @@
             Description = "Σχεδιασμός και υλοποίηση κατανεμημένου συστήματος επεξεργασίας μεγάλων δεδομένων με χρήση αλγορίθμων εξόρυξης γνώσης και μηχανικής μάθησης για ανάλυση δεδομένων μεγάλης κλίμακας.",
             Status = TopicStatus.Archived,
             Area = "Πληροφορικής",
-            SupervisingProfessor = "Καθ. Ταμπακάς",
+            SupervisingProfessor = "Επίκ. Χαραλαμπάκος",
             SupervisingProfessorAccount = "prof3@univ.edu",
             Prerequisites = "Κατανεμημένα Συστήματα, Python, Βάσεις Δεδομένων",
             MaxStudents = 1,
-            ProposedBy = "Καθ. Ταμπακάς",
+            ProposedBy = "Επίκ. Χαραλαμπάκος",
             ProposedOn = DateTime.UtcNow.AddDays(-30),
         });
     }
