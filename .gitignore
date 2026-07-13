@@ -25,3 +25,8 @@ node_modules/
 # Coverage
 TestResults/
 coverage*/
+# BMAD tooling and local-only files
+_bmad/
+.github/chatmodes/
+.github/prompts/
+diploma (1).md
