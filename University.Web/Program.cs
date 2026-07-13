@@ -105,7 +105,18 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<UniversityDbContext>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
-    db.Database.Migrate();
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 1801)
+    {
+        // An empty database shell exists from a failed previous initialization.
+        // Drop it and recreate so all migrations run cleanly.
+        db.Database.EnsureDeleted();
+        db.Database.Migrate();
+    }
+
     await EnsureDemoUserPasswordsAsync(userManager);
 }
 
