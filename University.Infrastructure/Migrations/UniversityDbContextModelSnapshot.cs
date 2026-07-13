@@ -52,14 +52,14 @@ namespace University.Infrastructure.Migrations
                         new
                         {
                             Id = "1",
-                            ConcurrencyStamp = "fcb418fe-5676-4f18-844f-4f5acaa9c635",
+                            ConcurrencyStamp = "c6b196d5-556a-45cd-840c-558c0254196f",
                             Name = "Professor",
                             NormalizedName = "PROFESSOR"
                         },
                         new
                         {
                             Id = "2",
-                            ConcurrencyStamp = "719aa9ed-cbd1-43d6-9c65-5c6796785845",
+                            ConcurrencyStamp = "f689b771-3150-4ee4-a3a8-d9df52a61861",
                             Name = "Student",
                             NormalizedName = "STUDENT"
                         });
@@ -777,7 +777,7 @@ namespace University.Infrastructure.Migrations
                             Id = 1,
                             Department = "Computer Science",
                             Expertise = "Machine Learning",
-                            Name = "Επίκ. Χριστοδούλου",
+                            Name = "Χριστοδούλου",
                             UserId = "prof-1"
                         },
                         new
@@ -785,7 +785,7 @@ namespace University.Infrastructure.Migrations
                             Id = 2,
                             Department = "Mathematics",
                             Expertise = "Algebra",
-                            Name = "Αναπλ. Πετρέλλης",
+                            Name = "Πετρέλλης",
                             UserId = "prof-2"
                         },
                         new
@@ -793,7 +793,7 @@ namespace University.Infrastructure.Migrations
                             Id = 3,
                             Department = "Physics",
                             Expertise = "Quantum",
-                            Name = "Επίκ. Χαραλαμπάκος",
+                            Name = "Χαραλαμπάκος",
                             UserId = "prof-3"
                         },
                         new
@@ -801,7 +801,7 @@ namespace University.Infrastructure.Migrations
                             Id = 4,
                             Department = "Chemistry",
                             Expertise = "Organic",
-                            Name = "Αναπλ. Κούτρας",
+                            Name = "Κούτρας",
                             UserId = "prof-4"
                         },
                         new
@@ -809,7 +809,7 @@ namespace University.Infrastructure.Migrations
                             Id = 5,
                             Department = "Biology",
                             Expertise = "Genetics",
-                            Name = "Αναπλ. Τζήμας",
+                            Name = "Τζήμας",
                             UserId = "prof-5"
                         });
                 });

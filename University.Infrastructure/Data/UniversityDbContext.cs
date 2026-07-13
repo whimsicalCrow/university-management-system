@@ -220,11 +220,11 @@ public class UniversityDbContext : IdentityDbContext<IdentityUser>
 
         // Seed Domain Professors (using new object initializer syntax for read-only properties)
         modelBuilder.Entity<Professor>().HasData(
-            new { Id = 1, UserId = "prof-1", Name = "Επίκ. Χριστοδούλου", Department = "Computer Science", Expertise = "Machine Learning" },
-            new { Id = 2, UserId = "prof-2", Name = "Αναπλ. Πετρέλλης",   Department = "Mathematics",      Expertise = "Algebra" },
-            new { Id = 3, UserId = "prof-3", Name = "Επίκ. Χαραλαμπάκος", Department = "Physics",          Expertise = "Quantum" },
-            new { Id = 4, UserId = "prof-4", Name = "Αναπλ. Κούτρας",     Department = "Chemistry",        Expertise = "Organic" },
-            new { Id = 5, UserId = "prof-5", Name = "Αναπλ. Τζήμας",      Department = "Biology",          Expertise = "Genetics" }
+            new { Id = 1, UserId = "prof-1", Name = "Χριστοδούλου", Department = "Computer Science", Expertise = "Machine Learning" },
+            new { Id = 2, UserId = "prof-2", Name = "Πετρέλλης",   Department = "Mathematics",      Expertise = "Algebra" },
+            new { Id = 3, UserId = "prof-3", Name = "Χαραλαμπάκος", Department = "Physics",          Expertise = "Quantum" },
+            new { Id = 4, UserId = "prof-4", Name = "Κούτρας",     Department = "Chemistry",        Expertise = "Organic" },
+            new { Id = 5, UserId = "prof-5", Name = "Τζήμας",      Department = "Biology",          Expertise = "Genetics" }
         );
 
         // Seed Domain Students
