@@ -73,6 +73,36 @@ dotnet test UniversitySystem.sln
 
 ---
 
+## Performance tests (k6)
+
+Load tests for the golden demo flow live under `k6-performance-tests/`.
+
+### Install k6
+
+```powershell
+# Windows — winget
+winget install k6 --source winget --accept-source-agreements --accept-package-agreements
+
+# Windows — Chocolatey
+choco install k6
+
+# macOS
+brew install k6
+```
+
+### Run
+
+```bash
+# Start the app first (or use: .\scripts\start-demo.ps1)
+dotnet run --project University.Web/University.Web.csproj
+
+# Then in a second terminal:
+cd k6-performance-tests
+k6 run golden-flow.js
+```
+
+---
+
 ## Project structure
 
 ```
@@ -81,9 +111,13 @@ UniversitySystem.sln
 ├── University.Application/      CQRS commands & handlers (MediatR), validators
 ├── University.Infrastructure/   EF Core DbContext, repositories, storage services
 ├── University.Web/              Blazor Server app — pages, layout, components
-└── tests/
-    ├── University.UnitTests/
-    └── University.IntegrationTests/
+├── tests/
+│   ├── University.UnitTests/
+│   └── University.IntegrationTests/
+├── k6-performance-tests/        k6 load-test scripts
+├── k8s/                         Kubernetes deployment & service manifests
+└── scripts/
+    └── start-demo.ps1           One-shot demo launcher
 ```
 
 ---
