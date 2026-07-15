@@ -1,4 +1,4 @@
-# Thesis Management System
+# University Management System
 
 A web platform for universities to coordinate diploma thesis workflows between students and supervising professors — topic proposals, progress updates, file submissions, and feedback, all in one place.
 
@@ -15,36 +15,57 @@ Built with **Blazor Server** (.NET 10), **EF Core**, and **ASP.NET Core Identity
 
 ---
 
-## Quick start
+## Quick Start
 
-### 1. Prerequisites
+### Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) — provides the SQL Server database
+- Git
 
 > **No Docker?** Install Visual Studio 2022 (which includes SQL Server LocalDB) and skip the Docker step — the default connection string in `appsettings.json` targets LocalDB automatically.
 
-### 2. Start the database (Docker)
-
-```bash
-docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong!Passw0rd" \
-  -p 1433:1433 --name sql -d mcr.microsoft.com/mssql/server:2022-latest
-```
-
-> On Windows PowerShell, replace `\` with a backtick `` ` `` for line continuation.
-
-To stop/restart between sessions:
-```bash
-docker stop sql
-docker start sql
-```
-
-### 3. Run the app
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/your-org/university-management-system.git
 cd university-management-system
+```
 
+### 2. Start the database
+
+#### Option A: Docker (recommended)
+
+```bash
+docker build -t university-sql .
+docker run -d \
+  --name university-sql \
+  -p 1433:1433 \
+  -e MSSQL_SA_PASSWORD=YourStrong!Passw0rd \
+  -m 2g \
+  university-sql
+```
+
+> On Windows PowerShell, replace `\` with a backtick `` ` `` for line continuation.
+
+**Troubleshooting:**
+- **Container exits immediately (exit code 137):** Increase Docker Desktop memory in settings to at least 4GB total, or allocate more with `-m 4g`
+- **Can't connect to port 1433:** Check `docker ps` to verify the container is running, and `docker logs university-sql` for errors
+- **Persist data between runs:** Add `-v university-db:/var/opt/mssql` to the docker run command
+
+To stop/restart between sessions:
+```bash
+docker stop university-sql
+docker start university-sql
+```
+
+#### Option B: SQL Server LocalDB (Windows only)
+
+Skip Docker and use the local connection string in `appsettings.json` — no additional setup needed.
+
+### 3. Run the application
+
+```bash
 dotnet restore UniversitySystem.sln
 dotnet run --project University.Web/University.Web.csproj
 ```
@@ -64,20 +85,20 @@ On first run, EF Core automatically applies migrations and seeds all demo accoun
 
 ---
 
-## Running the tests
+## Running Tests
+
+### Unit and Integration Tests
 
 ```bash
 dotnet test UniversitySystem.sln
 # Expected: 97 tests, 0 failures (82 unit + 15 integration)
 ```
 
----
-
-## Performance tests (k6)
+### Performance Tests (k6)
 
 Load tests for the golden demo flow live under `k6-performance-tests/`.
 
-### Install k6
+#### Install k6
 
 ```powershell
 # Windows — winget
@@ -90,7 +111,7 @@ choco install k6
 brew install k6
 ```
 
-### Run
+#### Run
 
 ```bash
 # Start the app first (or use: .\scripts\start-demo.ps1)
@@ -103,7 +124,7 @@ k6 run golden-flow.js
 
 ---
 
-## Project structure
+## Project Structure
 
 ```
 UniversitySystem.sln
@@ -116,19 +137,34 @@ UniversitySystem.sln
 │   └── University.IntegrationTests/
 ├── k6-performance-tests/        k6 load-test scripts
 ├── k8s/                         Kubernetes deployment & service manifests
-└── scripts/
-    └── start-demo.ps1           One-shot demo launcher
+├── scripts/
+│   └── start-demo.ps1           One-shot demo launcher
+├── Dockerfile                   SQL Server 2022 image with health check
+└── .dockerignore                Build context exclusions
 ```
 
 ---
 
-## Tech stack
+## Tech Stack
 
-.NET 10 · Blazor Server · EF Core 10 · SQL Server · ASP.NET Core Identity · MediatR · FluentValidation · xUnit · bunit
+.NET 10 · Blazor Server · EF Core 10 · SQL Server · ASP.NET Core Identity · MediatR · FluentValidation · xUnit · bunit · Docker
 
 ---
 
-## Attachment storage
+## Database & Storage
+
+### SQL Server
+
+Default: SQL Server 2022 running in Docker (see Quick Start). Connection string targets `localhost,1433`.
+
+Health check verifies the database is ready to accept connections:
+```bash
+docker ps --format "{{.Names}}\t{{.Status}}"
+```
+
+Once status shows `healthy`, the app is ready to start.
+
+### Attachment Storage
 
 By default, files are saved locally under `wwwroot/attachments/`. To switch to Azure Blob Storage, set `Attachments:StorageProvider` to `AzureBlob` in `appsettings.json` and provide your connection string.
 
@@ -138,3 +174,34 @@ By default, files are saved locally under `wwwroot/attachments/`. To switch to A
 
 Azure DevOps (`pipeline-cd.yaml`): restore → build → test → SonarQube → Docker image → Azure Container Apps.
 
+---
+
+## Environment Variables
+
+When running the Docker container, override defaults:
+
+```bash
+docker run -d \
+  -e MSSQL_SA_PASSWORD=MySecurePassword123! \
+  -e MSSQL_AGENT_ENABLED=true \
+  university-sql
+```
+
+- `ACCEPT_EULA=Y` — Required to accept SQL Server EULA (set automatically)
+- `MSSQL_SA_PASSWORD` — SA account password (default: `YourStrong!Passw0rd`)
+- `MSSQL_AGENT_ENABLED=true` — Enables SQL Server Agent (optional)
+
+---
+
+## Connecting with SQL Tools
+
+Use any SQL Server client (SSMS, Azure Data Studio, DBeaver) to connect directly:
+
+- **Server:** `localhost,1433`
+- **Username:** `sa`
+- **Password:** (your `MSSQL_SA_PASSWORD` value)
+
+Or via command line:
+```bash
+sqlcmd -S localhost -U sa -P YourStrong!Passw0rd
+```
